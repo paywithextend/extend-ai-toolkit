@@ -1,0 +1,60 @@
+[project]
+name = "extend_ai_toolkit"
+version = "0.1.0"
+description = "Extend AI Toolkit"
+authors = [
+    { name = "Extend", email = "support@paywithextend.com" },
+]
+keywords = ["extend", "api", "virtual cards", "payments", "ai", "agent", "mcp"]
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+dependencies = [
+    "mcp>=1.4.1",
+    "python-dotenv>=1.0.1",
+    "langchain==0.3.20",
+    "colorama>=0.4.4",
+    "pydantic>=1.10.2",
+    "requests==2.32.3",
+    "build",
+    "starlette>=0.40.0,<0.46.0"
+]
+
+
+[project.optional-dependencies]
+dev = ["mypy>=1.11.1", "ruff>=0.6.1"]
+
+[build-system]
+requires = ["setuptools>=73.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = { find = { where = ["extend_ai_toolkit"] } }
+
+[tool.setuptools.package-dir]
+"" = "extend_ai_toolkit"
+
+
+[tool.setuptools.package-data]
+"*" = ["py.typed"]
+
+[tool.ruff]
+lint.select = [
+    "E", # pycodestyle
+    "F", # pyflakes
+    "I", # isort
+    "D", # pydocstyle
+    "T201",
+    "UP",
+]
+lint.ignore = [
+    "UP006",
+    "UP007",
+    "UP035",
+    "D417",
+    "E501",
+]
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["D", "UP"]
+[tool.ruff.lint.pydocstyle]
+convention = "google"
