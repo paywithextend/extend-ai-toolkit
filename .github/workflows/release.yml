@@ -1,0 +1,42 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - development
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
+
+      - name: Install dependencies
+        run: sudo apt-get install make
+
+      - name: Create virtual environment
+        run: make venv
+
+      - name: Build package
+        run: |
+          set -x
+          source venv/bin/activate
+          rm -rf build dist *.egg-info
+          make build          
+
+      - name: Publish package to GitHub Packages
+        run: |
+          source venv/bin/activate
+          pip install --upgrade pip
+          pip install twine
+          twine upload --repository-url https://upload.pypi.org/legacy/ dist/*
+        env:
+          TWINE_USERNAME: ${{ github.actor }}
+          TWINE_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
