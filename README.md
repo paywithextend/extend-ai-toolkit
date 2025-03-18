@@ -3,39 +3,31 @@
 The Extend AI Toolkit enables Model Context Protocol and LangChain agent framework to integrate with Extend APIs
 through function calling.
 
-### Installation
+## Installation
 
 You don't need this source code unless you want to modify the package. If you just
 want to use the package run:
 
 ```sh
-pip install extend_ai_toolkit --extra-index-url https://<GITHUB_USERNAME>:<GITHUB_TOKEN>@pypi.pkg.github.com/paywithextend
+pip install extend_ai_toolkit --extra-index-url https://github.com/paywithextend/extend-ai-toolkit/releases/download/v0.1.0/extend_ai_toolkit-0.1.0-py3-none-any.whl
 ```
 
-#### Requirements
+### Requirements
 
 - Python 3.10+
 
-### Usage
+## Usage
 
 The library needs to be configured with your api key and api secret.
 
-#### Model Context Protocol
+### Model Context Protocol
 
 The Extend AI Toolkit also supports the [Model Context Protocol (MCP)](https://modelcontextprotocol.com/).
 
-To run the Extend MCP server in the inspector during development use the following command:
-
-```bash
-npx @modelcontextprotocol/inspector python extend_ai_toolkit/modelcontextprotocol/main.py --tools=virtual_cards.read,credit_cards.read
-```
-
-Make sure to set `EXTEND_API_KEY` and `EXTEND_API_SECRET` in your environment variables.
-
-To run the Extend MCP server using npx, use the following command:
+To run the Extend MCP server use the following command:
 
 ```
-TODO
+python -m extend_ai_toolkit.modelcontextprotocol.main --tools=virtual_cards.read,credit_cards.read --api-key=apik_XXXX --api-secret=XXXX
 ```
 
 Alternatively, you can set up your own MCP server. For example:
@@ -75,7 +67,39 @@ if __name__ == "__main__":
         sys.stderr.write(f"{str(e)}\n")
 ```
 
-#### LangChain
+To run the Extend MCP server in the inspector during development use the following command:
+
+```bash
+npx @modelcontextprotocol/inspector python extend_ai_toolkit/modelcontextprotocol/main.py --tools=virtual_cards.read,credit_cards.read
+```
+
+Make sure to set `EXTEND_API_KEY` and `EXTEND_API_SECRET` in your environment variables.
+
+#### Claude Desktop
+
+Add this tool as an mcp server by editing the Claude config file.
+
+On MacOS: `~/Library/Application\ Support/Claude/claude_desktop_config.json`
+On Windows: `%APPDATA%/Claude/claude_desktop_config.json`
+
+```json
+  "extend-mcp": {
+    "command": "python",
+    "args": [
+      "-m",
+      "extend_ai_toolkit.modelcontextprotocol.main",
+      "--tools=virtual_cards.read,credit_cards.read"
+    ],
+    "env": {
+      "API_HOST": "api-stage.paywithextend.com",
+      "API_VERSION": "application/vnd.paywithextend.v2021-03-12+json",
+      "EXTEND_API_KEY": "apik_XXXX",
+      "EXTEND_API_SECRET": "XXXXX"
+    }
+  }
+```
+
+### LangChain
 
 The toolkit works with LangChain and can be passed as a list of tools. For example:
 
