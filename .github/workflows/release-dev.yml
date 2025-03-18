@@ -35,7 +35,7 @@ jobs:
         id: get_version
         run: |
           # Extract the version assuming a line like: version = "0.1.0"
-          VERSION=$(grep -Po '(?<=^version\s*=\s*")[^"]+' pyproject.toml)
+          VERSION=$(grep -Po '^version\s*=\s*"\K[^"]+' pyproject.toml)
           echo "Version extracted: $VERSION"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
