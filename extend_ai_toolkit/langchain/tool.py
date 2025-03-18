@@ -1,23 +1,47 @@
-from typing import Any, Optional, Type
+from typing import Any
 
 from langchain_core.tools import BaseTool
-from pydantic import BaseModel
 
-from extend_ai_toolkit.shared.api import ExtendAPI
+from extend_ai_toolkit.shared import (
+    AgentToolInterface,
+    ExtendAPI,
+    Tool
+)
 
 
-class ExtendTool(BaseTool):
-    """Tool for interacting with the Extend API."""
+class LangChainTool(AgentToolInterface["LangChainTool._Tool"]):
+    _tool: Tool
+    _extend_api: ExtendAPI
 
-    extend_api: ExtendAPI
-    method: str
-    name: str = ""
-    description: str = ""
-    args_schema: Optional[Type[BaseModel]] = None
+    class _Tool(BaseTool):
+        def __init__(
+                self,
+                extend_api: ExtendAPI,
+                tool: Tool,
+        ):
+            self.extend_api = extend_api
+            self.method = tool.method.value
+            self.name = tool.name
+            self.description = tool.description
+            self.args_schema = tool.args_schema or None
 
-    async def _run(
+        async def _run(
+                self,
+                *args: Any,
+                **kwargs: Any,
+        ) -> str:
+            return await self.extend_api.run(self.method, *args, **kwargs)
+
+    def __init__(
             self,
-            *args: Any,
-            **kwargs: Any,
-    ) -> str:
-        return await self.extend_api.run(self.method, *args, **kwargs)
+            extend_api: ExtendAPI,
+            tool: Tool,
+    ):
+        self._tool = tool
+        self._extend_api = extend_api
+
+    def build_tool(self) -> _Tool:
+        return LangChainTool._Tool(
+            extend_api=self._extend_api,
+            tool=self._tool
+        )

@@ -9,7 +9,7 @@ You don't need this source code unless you want to modify the package. If you ju
 want to use the package run:
 
 ```sh
-pip install extend_ai_toolkit --extra-index-url https://github.com/paywithextend/extend-ai-toolkit/releases/download/v0.1.0/extend_ai_toolkit-0.1.0-py3-none-any.whl
+pip install extend_ai_toolkit@git+https://github.com/paywithextend/extend-ai-toolkit@development
 ```
 
 ### Requirements
@@ -18,7 +18,7 @@ pip install extend_ai_toolkit --extra-index-url https://github.com/paywithextend
 
 ## Usage
 
-The library needs to be configured with your api key and api secret.
+The library needs to be configured with your Extend api key and api secret.
 
 ### Model Context Protocol
 
