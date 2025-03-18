@@ -1,4 +1,4 @@
-from .agent_toolkit import ExtendAgentToolkit
+from .agent_toolkit import AgentToolkit
 from .api import ExtendAPI
 from .client import ExtendClient
 from .configuration import Configuration

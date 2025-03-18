@@ -1,29 +1,27 @@
 import os
-from typing import List, Generic, Type
+from abc import abstractmethod
+from typing import List, Generic
 
 from pydantic import PrivateAttr
 
 from .api import ExtendAPI
 from .configuration import Configuration
 from .enums import Agent
-from .interfaces import ToolType, AgentToolType
+from .interfaces import ToolType
 from .tools import Tool, tools
 
 
-class ExtendAgentToolkit(Generic[ToolType, AgentToolType]):
+class AgentToolkit(Generic[ToolType]):
     _tools: List[ToolType] = PrivateAttr(default=[])
 
     def __init__(
             self,
-            tool_class: Type[AgentToolType],
             agent: Agent,
             api_key: str,
             api_secret: str,
             configuration: Configuration
     ):
         super().__init__()
-
-        self.tool_class = tool_class
 
         host = os.getenv("API_HOST")
         if host is None:
@@ -44,9 +42,9 @@ class ExtendAgentToolkit(Generic[ToolType, AgentToolType]):
             for tool in configuration.allowed_tools(tools)
         ]
 
+    @abstractmethod
     def tool_for_agent(self, api: ExtendAPI, tool: Tool) -> ToolType:
-        instance: AgentToolType = self.tool_class(api, tool)
-        return instance.build_tool()
+        raise NotImplementedError("Subclasses must implement tool_for_agent()")
 
     def get_tools(self) -> List[ToolType]:
         return self._tools

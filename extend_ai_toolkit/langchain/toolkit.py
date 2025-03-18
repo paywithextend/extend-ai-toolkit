@@ -1,22 +1,24 @@
-from typing import List
+from extend_ai_toolkit.shared import (
+    Agent,
+    AgentToolkit,
+    Configuration,
+    ExtendAPI,
+    Tool
+)
+from .extend_tool import ExtendTool
 
-from agents import FunctionTool
-from pydantic import PrivateAttr
 
-from extend_ai_toolkit.shared import Configuration, ExtendAgentToolkit, Agent
-from .tool import LangChainTool
-
-
-class ExtendLangChainToolkit(ExtendAgentToolkit[LangChainTool._Tool, LangChainTool]):
-    _tools: List[FunctionTool] = PrivateAttr(default=[])
+class ExtendLangChainToolkit(AgentToolkit[ExtendTool]):
 
     def __init__(
             self, api_key: str, api_secret: str, configuration: Configuration = Configuration.allTools()
     ):
         super().__init__(
-            tool_class=LangChainTool,
             agent=Agent.LANGCHAIN,
             api_key=api_key,
             api_secret=api_secret,
             configuration=configuration
         )
+
+        def tool_for_agent(self, api: ExtendAPI, tool: Tool) -> ExtendTool:
+            return ExtendTool(api, tool)
