@@ -1,5 +1,6 @@
 from enum import Enum
 
+
 class ExtendAPITools(Enum):
     GET_VIRTUAL_CARDS = "get_virtual_cards"
     GET_VIRTUAL_CARD_DETAIL = "get_virtual_card_detail"
@@ -10,3 +11,8 @@ class ExtendAPITools(Enum):
     GET_CREDIT_CARDS = "get_credit_cards"
     GET_TRANSACTIONS = "get_transactions"
     GET_TRANSACTION_DETAIL = "get_transaction_detail"
+
+
+class Agent(Enum):
+    OPENAI = "openai"
+    LANGCHAIN = "langchain"

@@ -62,3 +62,26 @@ class Configuration(BaseModel):
 
         """
         return [tool for tool in tools if self.is_tool_allowed(tool)]
+
+    @classmethod
+    def allTools(cls) -> "Configuration":
+        """
+        Create a Configuration instance that allows all tools.        .
+        """
+        actions: Actions = {
+            "credit_cards": {
+                "read": True,
+                "create": True,
+                "update": True,
+            },
+            "virtual_cards": {
+                "read": True,
+                "create": True,
+                "update": True,
+            },
+            "transactions": {
+                "read": True,
+                "update": True,
+            },
+        }
+        return cls(actions=actions)

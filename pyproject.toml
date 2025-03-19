@@ -3,7 +3,7 @@ name = "extend_ai_toolkit"
 version = "0.1.0"
 description = "Extend AI Toolkit"
 authors = [
-    { name = "Extend", email = "support@paywithextend.com" },
+    { name = "Extend Engineering", email = "support@paywithextend.com" },
 ]
 keywords = ["extend", "api", "virtual cards", "payments", "ai", "agent", "mcp"]
 readme = "README.md"
@@ -17,7 +17,9 @@ dependencies = [
     "pydantic>=1.10.2",
     "requests==2.32.3",
     "build",
-    "starlette>=0.40.0,<0.46.0"
+    "starlette>=0.40.0,<0.46.0",
+    "openai==1.66.3",
+    "openai-agents==0.0.4"
 ]
 
 
