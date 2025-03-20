@@ -1,7 +1,8 @@
-from typing import Dict, List, TypedDict, Type
+from typing import List, TypedDict, Type
 
 from pydantic import BaseModel
 
+from .configuration import ProductPermissions, Product
 from .enums import ExtendAPITools
 from .prompts import (
     get_virtual_cards_prompt,
@@ -26,111 +27,125 @@ class Tool(BaseModel):
     name: str
     description: str
     args_schema: Type[BaseModel]
-    actions: Dict[str, Dict[str, bool]]
+    required_permissions: List[ProductPermissions]
 
 
 tools: List[Tool] = [
     Tool(
         method=ExtendAPITools.GET_VIRTUAL_CARDS,
-        name="Get Virtual Cards",
+        name="get_virtual_cards",
         description=get_virtual_cards_prompt,
         args_schema=GetVirtualCards,
-        actions={
-            "virtual_cards": {
-                "read": True,
-            },
-        },
+        required_permissions=[
+            ProductPermissions(
+                type=Product.VIRTUAL_CARDS,
+                permissions={"read": True})
+        ],
     ),
     Tool(
         method=ExtendAPITools.GET_VIRTUAL_CARD_DETAIL,
-        name="Get Virtual Card Detail",
+        name="get_virtual_card_detail",
         description=get_virtual_card_detail_prompt,
         args_schema=GetVirtualCardDetail,
-        actions={
-            "virtual_cards": {
-                "read": True,
-            },
-        },
+        required_permissions=[
+            ProductPermissions(
+                type=Product.VIRTUAL_CARDS,
+                permissions={"read": True})
+        ],
     ),
     Tool(
         method=ExtendAPITools.CREATE_VIRTUAL_CARD,
-        name="Create Virtual Card",
+        name="create_virtual_card",
         description=create_virtual_card_prompt,
         args_schema=CreateVirtualCard,
-        actions={
-            "virtual_cards": {
-                "read": True,
-                "create": True,
-            },
-        },
+        required_permissions=[
+            ProductPermissions(
+                type=Product.VIRTUAL_CARDS,
+                permissions={
+                    "read": True,
+                    "create": True,
+                })
+        ],
     ),
     Tool(
         method=ExtendAPITools.UPDATE_VIRTUAL_CARD,
-        name="Update Virtual Card",
+        name="update_virtual_card",
         description=update_virtual_card_prompt,
         args_schema=UpdateVirtualCard,
-        actions={
-            "virtual_cards": {
-                "read": True,
-                "update": True,
-            },
-        },
+        required_permissions=[
+            ProductPermissions(
+                type=Product.VIRTUAL_CARDS,
+                permissions={
+                    "read": True,
+                    "update": True,
+                })
+        ],
     ),
     Tool(
         method=ExtendAPITools.CANCEL_VIRTUAL_CARD,
-        name="Cancel Virtual Card",
+        name="cancel_virtual_card",
         description=cancel_virtual_card_prompt,
         args_schema=CancelVirtualCard,
-        actions={
-            "virtual_cards": {
-                "read": True,
-                "update": True,
-            },
-        },
+        required_permissions=[
+            ProductPermissions(
+                type=Product.VIRTUAL_CARDS,
+                permissions={
+                    "read": True,
+                    "update": True,
+                })
+        ],
     ),
     Tool(
         method=ExtendAPITools.CLOSE_VIRTUAL_CARD,
-        name="Close Virtual Card",
+        name="close_virtual_card",
         description=close_virtual_card_prompt,
         args_schema=CloseVirtualCard,
-        actions={
-            "virtual_cards": {
-                "read": True,
-                "update": True,
-            },
-        },
+        required_permissions=[
+            ProductPermissions(
+                type=Product.VIRTUAL_CARDS,
+                permissions={
+                    "read": True,
+                    "update": True,
+                })
+        ],
     ),
     Tool(
         method=ExtendAPITools.GET_CREDIT_CARDS,
-        name="Get Credit Cards",
+        name="get_credit_cards",
         description=get_credit_cards_prompt,
         args_schema=GetCreditCards,
-        actions={
-            "credit_cards": {
-                "read": True,
-            },
-        },
+        required_permissions=[
+            ProductPermissions(
+                type=Product.CREDIT_CARDS,
+                permissions={
+                    "read": True,
+                })
+        ],
     ),
     Tool(
         method=ExtendAPITools.GET_TRANSACTIONS,
-        name="Get Transactions",
+        name="get_transactions",
         description=get_transactions_prompt,
         args_schema=GetTransactions,
-        actions={
-            "transactions": {
-                "read": True,
-            },
-        },
+        required_permissions=[
+            ProductPermissions(
+                type=Product.TRANSACTIONS,
+                permissions={
+                    "read": True,
+                })
+        ],
     ),
     Tool(
         method=ExtendAPITools.GET_TRANSACTION_DETAIL,
-        name="Get Transaction Detail",
+        name="get_transaction_detail",
         description=get_transaction_detail_prompt,
         args_schema=GetTransactionDetail,
-        actions={
-            "transactions": {
-                "read": True,
-            },
-        },
+        required_permissions=[
+            ProductPermissions(
+                type=Product.TRANSACTIONS,
+                permissions={
+                    "read": True,
+                })
+        ],
     ),
 ]

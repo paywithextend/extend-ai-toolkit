@@ -1,3 +1,4 @@
+import base64
 import logging
 from typing import Optional, Dict
 
@@ -11,10 +12,12 @@ class ExtendClient:
     """Client for interacting with the Extend API"""
 
     def __init__(self, host: str, version: str, api_key: str, api_secret: str):
+        self.auth_value = base64.b64encode(f"{api_key}:{api_secret}".encode()).decode()
         self.host = host
         self.headers = {
-            "Authorization": f"Bearer eyJraWQiOiJFTlwvVHBBOVo0d1pHMzllWlBrZWxjSDlaQVFSdU8zZVg4RUhnd2Z4cE5MQT0iLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiI4MDY0YmM5Mi00YzMxLTQ2MjctYWM2MS1mMTdkYzJkMjI0Y2EiLCJkZXZpY2Vfa2V5IjoidXMtZWFzdC0xXzliYzQ3MmU0LTVkYTEtNDA5MC05MTY3LTMwZTQzNjYxYjUwNiIsImlzcyI6Imh0dHBzOlwvXC9jb2duaXRvLWlkcC51cy1lYXN0LTEuYW1hem9uYXdzLmNvbVwvdXMtZWFzdC0xX1VRd2Q3VUNKYiIsImNsaWVudF9pZCI6IjI4YnQ5ZGZva3VxcWNuNmc2OGsxMGdqcjZoIiwib3JpZ2luX2p0aSI6IjBlNmJiODUwLWMzMTktNDZjZC05ZDg4LWIxNWQ1ZWVkOThjMiIsImV2ZW50X2lkIjoiZmYxODliZTctOGM1OC00MGVlLTg3MjctNmNlNzBkZjNlMTU3IiwidG9rZW5fdXNlIjoiYWNjZXNzIiwic2NvcGUiOiJhd3MuY29nbml0by5zaWduaW4udXNlci5hZG1pbiIsImF1dGhfdGltZSI6MTc0MTk5OTYwNywiZXhwIjoxNzQyMDAwNTA3LCJpYXQiOjE3NDE5OTk2MDcsImp0aSI6IjNhODMwZTVmLWFlOGEtNGU3Ni1iYTY4LWNjYzJiMzBmNDYzMSIsInVzZXJuYW1lIjoiZmYxOGZkMzUtMTJjYi00NDlmLWEyNjUtYzUzZWQwZmVmMGMzIn0.P8SpmUzpGQ5FvyrqJTgcJXHkH968dckwH583YbICNUNT7yNgKKaYVjBiHjHsZyGxk8j2M4qf81e-GIbiOyav0davOWMUANsUnSL-TVGB6WR1ItB-R2xHjOVH-a5Q9nMXcHiMoKY3cxFNbofiZumkYzA80TEwXF4HM5P9qG4BkQJ05CdqqM9gQZEIj8l-Wz35yXnVoHQratt3gzFiE58rIJEwAowbs-XYgicPBPfhwmkU-JBZdJJVHdN7BtsPj_1iLR7a3voNFrFRHj6xTRn95RpOW07nTjlQhpP2ngwH31yJOBe4biE9Jyxy_Vffn14h-fWFYCb9dbKzQb_9HvoRWA",
-            "Accept": version
+            "Authorization": f"Basic {self.auth_value}",
+            "Accept": version,
+            "x-extend-api-key": api_key
         }
 
     async def get_virtual_cards(

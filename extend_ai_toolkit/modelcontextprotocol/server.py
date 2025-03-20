@@ -18,7 +18,7 @@ logger.setLevel(logging.INFO)
 
 
 class ExtendMCPServer(FastMCP):
-    def __init__(self, host: str, version: str, api_key: str, api_secret: str, configuration: Configuration):
+    def __init__(self, api_key: str, api_secret: str, configuration: Configuration):
         super().__init__(
             name="Extend",
             version="0.1.0",
@@ -27,8 +27,6 @@ class ExtendMCPServer(FastMCP):
         )
 
         self._extend = ExtendAPI(
-            host=host,
-            version=version,
             api_key=api_key,
             api_secret=api_secret
         )
@@ -65,7 +63,7 @@ class ExtendMCPServer(FastMCP):
 
     def _handle_tool_request(self, tool: Tool, fn: AnyFunction):
         async def resource_handler(*args, **kwargs):
-            result = await self._extend.run(tool.method, *args, **kwargs)
+            result = await self._extend.run(tool.method.value, *args, **kwargs)
             return {
                 "content": [
                     {

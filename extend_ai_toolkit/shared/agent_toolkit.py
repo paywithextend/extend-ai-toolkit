@@ -1,4 +1,3 @@
-import os
 from abc import abstractmethod
 from typing import List, Generic
 
@@ -23,16 +22,7 @@ class AgentToolkit(Generic[ToolType]):
     ):
         super().__init__()
 
-        host = os.getenv("API_HOST")
-        if host is None:
-            raise ValueError("API_HOST environment variable must be set")
-        version = os.getenv("API_VERSION")
-        if version is None:
-            raise ValueError("API_VERSION environment variable must be set")
-
         extend_api = ExtendAPI(
-            host=host,
-            version=version,
             api_key=api_key,
             api_secret=api_secret
         )

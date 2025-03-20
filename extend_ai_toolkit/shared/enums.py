@@ -13,6 +13,18 @@ class ExtendAPITools(Enum):
     GET_TRANSACTION_DETAIL = "get_transaction_detail"
 
 
+class Action(Enum):
+    CREATE = "create"
+    READ = "read"
+    UPDATE = "update"
+
+
 class Agent(Enum):
     OPENAI = "openai"
     LANGCHAIN = "langchain"
+
+
+class Product(Enum):
+    CREDIT_CARDS = "credit_cards"
+    VIRTUAL_CARDS = "virtual_cards"
+    TRANSACTIONS = "transactions"

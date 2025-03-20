@@ -32,7 +32,7 @@ jobs:
           set -x
           source venv/bin/activate
           rm -rf build dist *.egg-info
-          make build
+          make build ENV=stage
 
       - name: Extract Version from pyproject.toml
         id: get_version

@@ -22,12 +22,61 @@ The library needs to be configured with your Extend api key and api secret.
 
 ### Model Context Protocol
 
-The Extend AI Toolkit also supports the [Model Context Protocol (MCP)](https://modelcontextprotocol.com/).
+The Extend AI Toolkit supports the [Model Context Protocol (MCP)](https://modelcontextprotocol.com/).
 
-To run the Extend MCP server use the following command:
+#### Development
 
+To run the Extend MCP server in the inspector during development use the following command:
+
+```bash
+npx @modelcontextprotocol/inspector python extend_ai_toolkit/modelcontextprotocol/main.py --tools=virtual_cards.read,credit_cards.read
+```
+
+Make sure to set `EXTEND_API_KEY` and `EXTEND_API_SECRET` in your environment variables.
+
+#### Claude Desktop
+
+Add this tool as an mcp server by editing the Claude config file.
+
+On MacOS: `~/Library/Application\ Support/Claude/claude_desktop_config.json`
+On Windows: `%APPDATA%/Claude/claude_desktop_config.json`
+
+```json
+  "extend-mcp": {
+    "command": "python",
+    "args": [
+      "-m",
+      "extend_ai_toolkit.modelcontextprotocol.main",
+      "--tools=all" // or a subset, e.g. "virtual_cards.read,credit_cards.read"
+    ],
+    "env": {
+      "API_HOST": "api-stage.paywithextend.com",
+      "API_VERSION": "application/vnd.paywithextend.v2021-03-12+json",
+      "EXTEND_API_KEY": "apik_XXXX",
+      "EXTEND_API_SECRET": "XXXXX"
+    }
+  }
+```
+
+#### Direct Execution
+
+For advanced scenarios like custom deployments or running without Claude, you can execute your server directly:
+
+
+STDIO Transport:
 ```
 python -m extend_ai_toolkit.modelcontextprotocol.main --tools=virtual_cards.read,credit_cards.read --api-key=apik_XXXX --api-secret=XXXX
+```
+
+SSE Transport:
+```
+python -m extend_ai_toolkit.modelcontextprotocol.main_sse --tools=virtual_cards.read,credit_cards.read --api-key=apik_XXXX --api-secret=XXXX
+```
+
+Additionally, You can connect to your SSE server using our custom MCP client
+
+```
+python -m extend_ai_toolkit.modelcontextprotocol.mcp_client 
 ```
 
 Alternatively, you can set up your own MCP server. For example:
@@ -75,29 +124,6 @@ npx @modelcontextprotocol/inspector python extend_ai_toolkit/modelcontextprotoco
 
 Make sure to set `EXTEND_API_KEY` and `EXTEND_API_SECRET` in your environment variables.
 
-#### Claude Desktop
-
-Add this tool as an mcp server by editing the Claude config file.
-
-On MacOS: `~/Library/Application\ Support/Claude/claude_desktop_config.json`
-On Windows: `%APPDATA%/Claude/claude_desktop_config.json`
-
-```json
-  "extend-mcp": {
-    "command": "python",
-    "args": [
-      "-m",
-      "extend_ai_toolkit.modelcontextprotocol.main",
-      "--tools=virtual_cards.read,credit_cards.read"
-    ],
-    "env": {
-      "API_HOST": "api-stage.paywithextend.com",
-      "API_VERSION": "application/vnd.paywithextend.v2021-03-12+json",
-      "EXTEND_API_KEY": "apik_XXXX",
-      "EXTEND_API_SECRET": "XXXXX"
-    }
-  }
-```
 
 ### LangChain
 
@@ -134,7 +160,7 @@ extend_langchain_toolkit = ExtendLangChainToolkit(
 )
 
 tools = []
-tools.extend(stripe_agent_toolkit.get_tools())
+tools.extend(extend_agent_toolkit.get_tools())
 
 langgraph_agent_executor = create_react_agent(llm, tools)
 ```

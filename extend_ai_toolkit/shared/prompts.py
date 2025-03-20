@@ -1,10 +1,17 @@
 # prompts.py
 
 get_virtual_cards_prompt = """
-This tool will get all virtual cards in Extend.
+This tool will get all of the users virtual cards in Extend.
 It takes two argument:
 - page (int): the page number for the paginated list of virtual cards.
-- pageCount (int): the number of virtual cards per page.
+- page_count (int): the number of virtual cards per page.
+It takes two argument:
+- page (int): the page number for the paginated list of virtual cards.
+- page_count (int): the number of virtual cards per page.
+The response is a JSON object with two main parts:
+- pagination: An object that contains metadata about the list, including the current page number, the number of virtual cards on that page, the total number of virtual cards, and the total number of pages.
+- virtualCards: An array of virtual card objects.
+Please note that 'totalItems' in the 'pagination' object represents the total number of virtual cards I have, even though the current page only shows a subset.
 """
 
 get_virtual_card_detail_prompt = """
