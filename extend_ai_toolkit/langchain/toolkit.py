@@ -11,7 +11,7 @@ from .extend_tool import ExtendTool
 class ExtendLangChainToolkit(AgentToolkit[ExtendTool]):
 
     def __init__(
-            self, api_key: str, api_secret: str, configuration: Configuration = Configuration.allTools()
+            self, api_key: str, api_secret: str, configuration: Configuration = Configuration.all_tools()
     ):
         super().__init__(
             agent=Agent.LANGCHAIN,

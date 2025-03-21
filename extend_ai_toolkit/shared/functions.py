@@ -35,7 +35,7 @@ async def get_virtual_card_detail(extend: ExtendClient, virtual_card_id: str) ->
 
     except Exception as e:
         logger.error("Error getting virtual card detail: %s", e)
-        raise Exception("Error getting virtual card detail")
+        raise Exception(e)
 
 
 async def create_virtual_card(

@@ -16,7 +16,7 @@ class GetVirtualCards(BaseModel):
     )
     status: Optional[str] = Field(
         None,
-        description="Filter virtual cards by status.",
+        description="Filter virtual cards by status. Options: ACTIVE, INACTIVE, CANCELLED, CLOSED.",
     )
     recipient: Optional[str] = Field(
         None,

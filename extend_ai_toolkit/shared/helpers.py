@@ -1,3 +1,4 @@
+import json
 from typing import Dict
 
 
@@ -5,11 +6,12 @@ from typing import Dict
 
 def format_virtual_cards_list(response: Dict) -> str:
     """Format the virtual cards list response"""
+    pagination = response.get("pagination", {})
     cards = response.get("virtualCards", [])
     if not cards:
         return "No virtual cards found."
 
-    result = "Virtual Cards:\n\n"
+    result = f"Pagination:{json.dumps(pagination)}\n\nVirtual Cards:\n\n"
     for card in cards:
         result += (
             f"- ID: {card['id']}\n"
