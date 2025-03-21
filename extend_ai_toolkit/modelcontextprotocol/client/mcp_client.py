@@ -2,7 +2,6 @@ import argparse
 import asyncio
 import json
 import logging
-import os
 import sys
 from contextlib import asynccontextmanager
 from typing import Optional, List, Dict, Any
@@ -11,7 +10,12 @@ from dotenv import load_dotenv
 from mcp import ClientSession
 from mcp.client.sse import sse_client
 from mypy.util import json_dumps
-from openai import AsyncOpenAI
+
+from extend_ai_toolkit.modelcontextprotocol.client import (
+    AnthropicChatClient,
+    OpenAIChatClient,
+    ChatClient
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -21,8 +25,6 @@ logger = logging.getLogger("mcp_client")
 
 load_dotenv()
 
-aclient = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
 
 class MCPClient:
     """
@@ -30,12 +32,13 @@ class MCPClient:
     using Server-Sent Events (SSE) transport and the OpenAI API.
     """
 
-    def __init__(self, model_name="gpt-4o", max_tokens=1000):
+    def __init__(self, llm_client: ChatClient, model_name="gpt-4o", max_tokens=1000):
         self.session: Optional[ClientSession] = None
         self._session_context = None
         self._streams_context = None
         self.model_name = model_name
         self.max_tokens = max_tokens
+        self.llm_client = llm_client
 
     @asynccontextmanager
     async def connect(self, server_url: str):
@@ -128,21 +131,16 @@ class MCPClient:
         final_text = []
 
         try:
-            # Call the OpenAI API
-            response = await aclient.chat.completions.create(
-                model=self.model_name,
-                max_tokens=self.max_tokens,
+            # Call the LLM API
+            content, function_call = await self.llm_client.generate_completion(
                 messages=messages,
-                functions=functions
+                functions=functions,
+                max_tokens=self.max_tokens,
             )
 
-            choice = response.choices[0]
-
-            # Check if the assistant wants to call a function
-            if choice.finish_reason == "function_call":
-                func_call = choice.message.function_call
-                tool_name = func_call.name  # This should match one of the sanitized tool names
-                tool_arguments_str = func_call.arguments  # This is a JSON string
+            if function_call:
+                tool_name = function_call["name"]
+                tool_arguments_str = function_call["arguments"]
 
                 try:
                     # Convert the JSON string into a dictionary
@@ -172,20 +170,16 @@ class MCPClient:
                 })
 
                 # Make a follow-up API call including the tool result
-                follow_up = await aclient.chat.completions.create(
-                    model=self.model_name,
-                    max_tokens=self.max_tokens,
+                assistant_message = await self.llm_client.generate_with_tool_result(
                     messages=messages,
+                    max_tokens=self.max_tokens
                 )
 
-                assistant_message = follow_up.choices[0].message.content
-                # final_text.append(tool_result.content[0].text)
                 final_text.append(assistant_message)
                 return "\n".join(final_text)
             else:
                 # No function call; return the assistant's message directly
-                assistant_message = choice.message.content
-                final_text.append(assistant_message)
+                final_text.append(content)
                 return "\n".join(final_text)
 
         except Exception as e:
@@ -203,6 +197,9 @@ class MCPClient:
 
         while True:
             try:
+                await asyncio.sleep(0.1)
+                sys.stdout.flush()
+
                 query = input("\nQuery: ").strip()
 
                 if query.lower() in ('quit', 'exit', 'q'):
@@ -224,23 +221,32 @@ class MCPClient:
 
 async def main():
     """Main entry point for the MCP client"""
-    if len(sys.argv) < 2:
-        print("Usage: python client.py <URL of SSE MCP server (e.g., http://localhost:8080/sse)>")
-        sys.exit(1)
 
     parser = argparse.ArgumentParser(description="MCP Client for interacting with SSE-based servers.")
-    parser.add_argument("--server-host", type=str, required=True, help="Server hostname (e.g., localhost)")
-    parser.add_argument("--server-port", type=int, required=True, help="Server port (e.g., 8000)")
+    parser.add_argument("--llm-provider", type=str, choices=["openai", "anthropic"], default="openai",
+                        help="LLM Provider (e.g., openai)")
+    parser.add_argument("--llm-model", type=str, help="LLM Model (e.g., gpt-4o, claude-3-5-sonnet-20240229)")
+    parser.add_argument("--mcp-server-host", type=str, required=True, help="Server hostname (e.g., localhost)")
+    parser.add_argument("--mcp-server-port", type=int, required=True, help="Server port (e.g., 8000)")
     parser.add_argument("--scheme", type=str, choices=["http", "https"], default="http",
                         help="URL scheme (default: http)")
 
     args = parser.parse_args()
 
-    server_url = f"{args.scheme}://{args.server_host}:{args.server_port}/sse"
+    server_url = f"{args.scheme}://{args.mcp_server_host}:{args.mcp_server_port}/sse"
     print(f"Connecting to: {server_url}")
 
+    if args.llm_provider == "openai":
+        model = args.llm_model or "gpt-4o"
+        llm_client = OpenAIChatClient(model_name=model)
+    else:
+        model = args.llm_model or "claude-3-7-sonnet-20250219"
+        llm_client = AnthropicChatClient(model_name=model)
+
     try:
-        async with MCPClient().connect(server_url=server_url) as client:
+        async with MCPClient(
+                llm_client=llm_client
+        ).connect(server_url=server_url) as client:
             await client.chat_loop()
     except KeyboardInterrupt:
         print("\nProgram terminated by user")

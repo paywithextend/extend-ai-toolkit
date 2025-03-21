@@ -17,7 +17,7 @@ from extend_ai_toolkit.shared.configuration import VALID_PRODUCT_PERMISSIONS
 load_dotenv()
 
 
-def create_starlette_app(sse_server: Server, *, debug: bool = False) -> Starlette:
+def build_starlette_app(sse_server: Server, *, debug: bool = False) -> Starlette:
     """Create a Starlette application that can serve the provided mcp server with SSE."""
     sse = SseServerTransport("/messages/")
 
@@ -67,15 +67,11 @@ if __name__ == "__main__":
 
         import argparse
 
-        # parser = argparse.ArgumentParser(description='Run MCP SSE-based server')
-        # parser.add_argument('--host', default='0.0.0.0', help='Host to bind to')
-        # parser.add_argument('--port', type=int, default=8080, help='Port to listen on')
-        # args = parser.parse_args()
         host = os.environ.get("MCP_HOST")
         port = os.environ.get("MCP_PORT")
 
         # Bind SSE request handling to MCP server
-        starlette_app = create_starlette_app(mcp_server, debug=True)
+        starlette_app = build_starlette_app(mcp_server, debug=True)
 
         uvicorn.run(starlette_app, host=host, port=int(port))
     except Exception as e:

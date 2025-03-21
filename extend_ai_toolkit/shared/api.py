@@ -1,32 +1,11 @@
-import logging
-from typing import Dict, Any, Optional
+from typing import Any
 
 from dotenv import load_dotenv
 
 from extend_ai_toolkit.config import API_HOST, API_VERSION
-from .client import ExtendClient
 from .enums import ExtendAPITools
-from .functions import (
-    get_virtual_card_detail,
-    get_virtual_cards,
-    create_virtual_card,
-    close_virtual_card,
-    cancel_virtual_card,
-    update_virtual_card,
-    get_transactions,
-    get_credit_cards,
-    get_transaction_detail
-)
-from .helpers import (
-    format_virtual_cards_list,
-    format_virtual_card_details,
-    format_updated_virtual_card,
-    format_canceled_virtual_card,
-    format_closed_virtual_card,
-    format_transactions_list,
-    format_transaction_details,
-    format_credit_cards_list
-)
+from .functions import *
+from .helpers import *
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -41,8 +20,8 @@ class ExtendAPI:
                  context: Optional[Dict[str, Any]] = None):
 
         extend_client = ExtendClient(
-            host=API_HOST,
-            version=API_VERSION,
+            host=API_HOST if API_HOST is not None else "apiv2-stage.paywithextend.com",
+            version=API_VERSION if API_VERSION is not None else "application/vnd.paywithextend.v2021-03-12+json",
             api_key=api_key,
             api_secret=api_secret
         )

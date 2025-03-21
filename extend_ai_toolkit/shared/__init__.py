@@ -18,8 +18,6 @@ from .interfaces import AgentToolInterface
 from .tools import Tool, tools
 from .validation import validate_card_creation_data, validate_recurrence_data
 
-__version__ = "0.1.0"
-
 __all__ = [
     "Agent",
     "AgentToolInterface",
