@@ -5,9 +5,13 @@ def validate_options(cls):
     original_init = cls.__init__
 
     def new_init(self, *args, **kwargs):
-        # Call the original __init__ to set attributes
         original_init(self, *args, **kwargs)
+
         # Perform validation after initialization
+        if not self.org_id:
+            raise ValueError(
+                'Organization Id not provided. Please either pass it as an argument --org-id=$KEY or set the ORGANIZATION_ID environment variable.'
+            )
         if not self.api_key:
             raise ValueError(
                 'Extend API key not provided. Please either pass it as an argument --api-key=$KEY or set the EXTEND_API_KEY environment variable.'
@@ -29,15 +33,17 @@ def validate_options(cls):
 
 @validate_options
 class Options:
-    ACCEPTED_ARGS = ['api-key', 'api-secret', 'tools']
+    ACCEPTED_ARGS = ['org-id,', 'api-key', 'api-secret', 'tools']
 
-    def __init__(self, tools, api_key, api_secret):
+    def __init__(self, tools, org_id, api_key, api_secret):
         self.tools = tools
+        self.org_id = org_id
         self.api_key = api_key
         self.api_secret = api_secret
 
     @staticmethod
     def from_args(args: list[str], valid_tools: list[str]) -> "Options":
+        org_id = None
         tools = ""
         api_key = None
         api_secret = None
@@ -49,6 +55,8 @@ class Options:
                     raise ValueError(f"Argument {arg} is not in --key=value format.")
                 key, value = arg_body.split("=", 1)
                 match key:
+                    case "org-id":
+                        org_id = value
                     case "tools":
                         tools = value
                     case "api-key":
@@ -68,7 +76,8 @@ class Options:
                     f"Invalid tool: {tool}. Accepted tools are: {', '.join(valid_tools)}"
                 )
 
+        org_id = org_id or os.environ.get("ORGANIZATION_ID")
         api_key = api_key or os.environ.get("EXTEND_API_KEY")
         api_secret = api_secret or os.environ.get("EXTEND_API_SECRET")
 
-        return Options(tools, api_key, api_secret)
+        return Options(tools, org_id, api_key, api_secret)
