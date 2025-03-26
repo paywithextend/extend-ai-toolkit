@@ -20,7 +20,8 @@ dependencies = [
     "build",
     "starlette>=0.40.0,<0.46.0",
     "openai==1.66.3",
-    "openai-agents==0.0.4"
+    "openai-agents==0.0.4",
+    "extend @ git+https://github.com/paywithextend/extend-python.git@development#egg=extend",
 ]
 
 [project.urls]
@@ -31,18 +32,32 @@ dependencies = [
 dev = ["pytest>=7.0.1", "mypy>=1.11.1", "ruff>=0.6.1"]
 
 [build-system]
-requires = ["setuptools>=73.0.0", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
-[tool.setuptools]
-packages = { find = { include = ["extend_ai_toolkit", "extend_ai_toolkit.*"], exclude = ["extend_ai_toolkit.tests"] } }
+[tool.hatch.build.targets.wheel]
+packages = ["extend_ai_toolkit"]
 
-[tool.setuptools.package-dir]
-"extend_ai_toolkit" = "extend_ai_toolkit"
+[tool.hatch.build]
+packages = ["extend_ai_toolkit"]
+exclude = ["extend_ai_toolkit/tests/**"]
 
+[tool.hatch.metadata]
+allow-direct-references = true
 
-[tool.setuptools.package-data]
-"*" = ["py.typed"]
+#[build-system]
+#requires = ["setuptools>=73.0.0", "wheel"]
+#build-backend = "setuptools.build_meta"
+#
+#[tool.setuptools]
+#packages = { find = { include = ["extend_ai_toolkit", "extend_ai_toolkit.*"], exclude = ["extend_ai_toolkit.tests"] } }
+
+#[tool.setuptools.package-dir]
+#"extend_ai_toolkit" = "extend_ai_toolkit"
+#
+#
+#[tool.setuptools.package-data]
+#"*" = ["py.typed"]
 
 [tool.ruff]
 lint.select = [
