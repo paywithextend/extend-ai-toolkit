@@ -45,7 +45,7 @@ def build_starlette_app(sse_server: Server, *, debug: bool = False) -> Starlette
 def build_server():
     options = Options.from_args((sys.argv[1:]), VALID_PRODUCT_PERMISSIONS)
     selected_tools = options.tools
-    configuration = Configuration.from_tool_str(selected_tools)
+    configuration = Configuration.from_tool_str(selected_tools, options.org_id)
 
     return ExtendMCPServer(
         api_key=options.api_key,

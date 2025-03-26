@@ -34,9 +34,10 @@ class Tool:
 
 # Test that the classmethod all_tools creates a configuration with the expected defaults.
 def test_all_tools_configuration():
-    config = Configuration.all_tools()
+    config = Configuration.all_tools(org_id="test_org_id")
     # Expecting three product permissions.
     assert config.product_permissions is not None
+    assert config.org_id is "test_org_id"
     assert len(config.product_permissions) == 3
     # Check that each default permission is set as expected.
     for pp in config.product_permissions:

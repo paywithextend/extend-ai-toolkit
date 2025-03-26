@@ -1,8 +1,5 @@
-from typing import Any
-
 from dotenv import load_dotenv
 
-from extend_ai_toolkit.config import API_HOST, API_VERSION
 from .enums import ExtendAPITools
 from .functions import *
 from .helpers import *
@@ -16,17 +13,17 @@ load_dotenv()
 class ExtendAPI:
     """Wrapper around Extend API"""
 
-    def __init__(self, api_key: str, api_secret: str,
-                 context: Optional[Dict[str, Any]] = None):
+    def __init__(
+            self,
+            org_id: str,
+            api_key: str,
+            api_secret: str,
+    ):
 
-        extend_client = ExtendClient(
-            host=API_HOST if API_HOST is not None else "apiv2-stage.paywithextend.com",
-            version=API_VERSION if API_VERSION is not None else "application/vnd.paywithextend.v2021-03-12+json",
+        self.extend = ExtendClient(
             api_key=api_key,
             api_secret=api_secret
         )
-        self.extend = extend_client
-        self.context = context or {}
 
     async def run(self, tool: str, *args, **kwargs) -> str:
         match ExtendAPITools(tool).value:

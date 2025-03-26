@@ -18,6 +18,7 @@ VALID_PRODUCT_PERMISSIONS = [
 
 class Configuration(BaseModel):
     product_permissions: Optional[List[ProductPermissions]] = None
+    org_id: Optional[str]
 
     def add_permission(self, permission):
         if not self.product_permissions:
@@ -44,7 +45,7 @@ class Configuration(BaseModel):
         return True
 
     @classmethod
-    def all_tools(cls) -> "Configuration":
+    def all_tools(cls, org_id: str = None) -> "Configuration":
         product_permissions: List[ProductPermissions] = []
         for tool in VALID_PRODUCT_PERMISSIONS:
             product_str, action_str = tool.split(".")
@@ -61,10 +62,10 @@ class Configuration(BaseModel):
                 prod_permission = ProductPermissions.from_str(product_str, action_str)
                 product_permissions.append(prod_permission)
 
-        return cls(product_permissions=product_permissions)
+        return cls(product_permissions=product_permissions, org_id=org_id)
 
     @classmethod
-    def from_tool_str(cls, tools: str) -> "Configuration":
+    def from_tool_str(cls, tools: str, org_id: str) -> "Configuration":
         configuration = cls(product_permissions=[])
         tool_specs = tools.split(",") if tools else []
 
@@ -78,6 +79,7 @@ class Configuration(BaseModel):
             for product, action_str in validated_tools:
                 product_permission = ProductPermissions(product, Permissions(**{action_str: True}))
                 configuration.add_permission(product_permission)
+        configuration.org_id = org_id
         return configuration
 
 

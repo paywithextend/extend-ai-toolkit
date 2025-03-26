@@ -4,10 +4,7 @@ get_virtual_cards_prompt = """
 This tool will get all of the users virtual cards in Extend.
 It takes two argument:
 - page (int): the page number for the paginated list of virtual cards.
-- page_count (int): the number of virtual cards per page.
-It takes two argument:
-- page (int): the page number for the paginated list of virtual cards.
-- page_count (int): the number of virtual cards per page.
+- per_page (int): the number of virtual cards per page.
 The response is a JSON object with two main parts:
 - pagination: An object that contains metadata about the list, including the current page number, the number of virtual cards on that page, the total number of virtual cards, and the total number of pages.
 - virtualCards: An array of virtual card objects.
@@ -68,14 +65,14 @@ get_credit_cards_prompt = """
 This tool will get close a virtual card in Extend.
 It takes two argument:
 - page (int): the page number for the paginated list.
-- pageCount (int): the number of credit cards per page.
+- per_page (int): the number of credit cards per page.
 """
 
 get_transactions_prompt = """
 This tool will get a list of transactions in Extend.
 It takes two argument:
 - page (int): the page number for the paginated list.
-- pageCount (int): the number of transactions per page.
+- per_page (int): the number of transactions per page.
 """
 
 get_transaction_detail_prompt = """

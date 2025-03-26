@@ -1,9 +1,7 @@
 import logging
-from datetime import datetime
 from typing import Optional, Dict
 
-from .client import ExtendClient
-from .validation import validate_card_creation_data, validate_recurrence_data
+from extend import ExtendClient
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -19,18 +17,24 @@ async def get_virtual_cards(
 ) -> Dict:
     """Get list of virtual cards"""
     try:
-        response = await extend.get_virtual_cards(page, per_page, status, recipient, search_term)
+        response = await extend.virtual_cards.get_virtual_cards(
+            page=page,
+            per_page=per_page,
+            status=status,
+            recipient=recipient,
+            search_term=search_term
+        )
         return response
 
     except Exception as e:
         logger.error("Error getting virtual cards: %s", e)
-        raise Exception("Error getting virtual cards")
+        raise Exception("Error getting virtual cards: %s", e)
 
 
 async def get_virtual_card_detail(extend: ExtendClient, virtual_card_id: str) -> Dict:
     """Get details of a specific virtual card"""
     try:
-        response = await extend.get_virtual_card_detail(virtual_card_id)
+        response = await extend.virtual_cards.get_virtual_card_detail(virtual_card_id)
         return response
 
     except Exception as e:
@@ -44,6 +48,7 @@ async def create_virtual_card(
         display_name: str,
         amount_dollars: float,
         recipient_email: Optional[str] = None,
+        cardholder_email: Optional[str] = None,
         valid_from: Optional[str] = None,
         valid_to: Optional[str] = None,
         notes: Optional[str] = None,
@@ -66,6 +71,7 @@ async def create_virtual_card(
         display_name: Name for the virtual card
         amount_dollars: Amount to load on the card in dollars
         recipient_email: Optional email address of recipient
+        cardholder_email: Optional email address of cardholder
         valid_from: Optional start date (YYYY-MM-DD)
         valid_to: Optional end date (YYYY-MM-DD)
         notes: Optional notes for the card
@@ -82,35 +88,28 @@ async def create_virtual_card(
     """
     try:
         balance_cents = int(amount_dollars * 100)
-        card_data = validate_card_creation_data(
+
+        response = await extend.virtual_cards.create_virtual_card(
             credit_card_id=credit_card_id,
             display_name=display_name,
             balance_cents=balance_cents,
-            recipient_email=recipient_email,
-            valid_from=valid_from,
+            notes=notes,
+            recurs=is_recurring,
+            recurrence={
+                "balance_cents": balance_cents,
+                "period": period,
+                "interval": interval,
+                "terminator": terminator,
+                "count": count,
+                "until": until,
+                "by_week_day": by_week_day,
+                "by_month_day": by_month_day,
+                "by_year_day": by_year_day
+            },
+            recipient=recipient_email,
+            cardholder=cardholder_email,
             valid_to=valid_to,
-            notes=notes
         )
-
-        if is_recurring:
-            if not all([period, interval, terminator]):
-                raise ValueError("period, interval, and terminator are required for recurring cards")
-
-            recurrence_data = validate_recurrence_data(
-                balance_cents=balance_cents,
-                period=period,
-                interval=interval,
-                terminator=terminator,
-                count=count,
-                until=until,
-                by_week_day=by_week_day,
-                by_month_day=by_month_day,
-                by_year_day=by_year_day
-            )
-            card_data["recurs"] = True
-            card_data["recurrence"] = recurrence_data
-
-        response = await extend.create_virtual_card(card_data)
         return response
 
     except Exception as e:
@@ -140,30 +139,15 @@ async def update_virtual_card(
 
     """
     try:
-        update_data = {}
-        if display_name:
-            update_data["displayName"] = display_name
-        if balance_dollars is not None:
-            update_data["balanceCents"] = str(int(balance_dollars * 100))
-        if valid_from:
-            try:
-                datetime.strptime(valid_from, "%Y-%m-%d")
-                update_data["validFrom"] = f"{valid_from}T00:00:00.000Z"
-            except ValueError:
-                raise ValueError("valid_from must be in YYYY-MM-DD format")
-        if valid_to:
-            try:
-                datetime.strptime(valid_to, "%Y-%m-%d")
-                update_data["validTo"] = f"{valid_to}T23:59:59.999Z"
-            except ValueError:
-                raise ValueError("valid_to must be in YYYY-MM-DD format")
-        if notes:
-            update_data["notes"] = notes
-
-        if not update_data:
-            return {"error": "No updates provided"}
-
-        response = await extend.update_virtual_card(virtual_card_id, update_data)
+        balance_cents = int(balance_dollars * 100)
+        response = await extend.virtual_cards.update_virtual_card(
+            card_id=virtual_card_id,
+            balance_cents=balance_cents,
+            notes=notes,
+            display_name=display_name,
+            valid_from=valid_from,
+            valid_to=valid_to,
+        )
         return response
 
     except Exception as e:
@@ -174,7 +158,7 @@ async def update_virtual_card(
 async def close_virtual_card(extend: ExtendClient, virtual_card_id: str) -> Dict:
     """Close a specific virtual card"""
     try:
-        response = await extend.close_virtual_card(virtual_card_id)
+        response = await extend.virtual_cards.close_virtual_card(virtual_card_id)
         return response
 
     except Exception as e:
@@ -185,7 +169,7 @@ async def close_virtual_card(extend: ExtendClient, virtual_card_id: str) -> Dict
 async def cancel_virtual_card(extend: ExtendClient, virtual_card_id: str) -> Dict:
     """Cancel a specific virtual card"""
     try:
-        response = await extend.cancel_virtual_card(virtual_card_id)
+        response = await extend.virtual_cards.cancel_virtual_card(virtual_card_id)
         return response
 
     except Exception as e:
@@ -217,7 +201,7 @@ async def get_transactions(
 
     """
     try:
-        response = await extend.get_transactions(
+        response = await extend.transactions.get_transactions(
             page,
             per_page,
             start_date,
@@ -236,7 +220,7 @@ async def get_transactions(
 async def get_transaction_detail(extend: ExtendClient, transaction_id: str) -> Dict:
     """Get a transaction detail"""
     try:
-        response = await extend.get_transaction_detail(transaction_id)
+        response = await extend.transactions.get_transaction_detail(transaction_id)
         return response
 
     except Exception as e:
@@ -244,10 +228,20 @@ async def get_transaction_detail(extend: ExtendClient, transaction_id: str) -> D
         raise Exception("Error getting transaction detail")
 
 
-async def get_credit_cards(extend: ExtendClient, page: int = 0, per_page: int = 10) -> Dict:
+async def get_credit_cards(
+        extend: ExtendClient,
+        page: int = 0,
+        per_page: int = 10,
+        status: Optional[str] = None,
+        search_term: Optional[str] = None,
+) -> Dict:
     """Get a list of credit cards"""
     try:
-        response = await extend.get_credit_cards(page, per_page)
+        response = await extend.credit_cards.get_credit_cards(
+            page=page,
+            per_page=per_page,
+            status=status
+        )
         return response
 
     except Exception as e:

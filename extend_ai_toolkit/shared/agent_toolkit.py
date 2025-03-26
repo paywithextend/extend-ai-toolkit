@@ -12,17 +12,18 @@ from .tools import Tool, tools
 
 class AgentToolkit(Generic[ToolType]):
     _tools: List[ToolType] = PrivateAttr(default=[])
+    agent: Agent
 
     def __init__(
             self,
-            agent: Agent,
             api_key: str,
             api_secret: str,
-            configuration: Configuration
+            configuration: Configuration,
     ):
         super().__init__()
 
         extend_api = ExtendAPI(
+            org_id=configuration.org_id,
             api_key=api_key,
             api_secret=api_secret
         )
