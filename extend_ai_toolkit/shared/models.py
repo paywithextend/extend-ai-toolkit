@@ -4,17 +4,17 @@ from typing import Optional, TypedDict
 from .enums import Product
 
 
-class Permissions(TypedDict, total=False):
+class Actions(TypedDict, total=False):
     create: Optional[bool]
     update: Optional[bool]
     read: Optional[bool]
 
 
 @dataclass
-class ProductPermissions:
+class Scope:
     type: Product
-    permissions: Permissions
+    actions: Actions
 
     @staticmethod
-    def from_str(product_str: str, permission_str: str) -> "ProductPermissions":
-        return ProductPermissions(Product(product_str), Permissions(**{permission_str: True}))
+    def from_str(product_str: str, actions_str: str) -> "Scope":
+        return Scope(Product(product_str), Actions(**{actions_str: True}))

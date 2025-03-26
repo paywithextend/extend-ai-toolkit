@@ -55,14 +55,14 @@ def mock_configuration():
             method=ExtendAPITools.GET_VIRTUAL_CARDS,
             description="Get all virtual cards",
             args_schema=VirtualCardsSchema,
-            required_permissions=[]
+            required_scope=[]
         ),
         Tool(
             name="Get Virtual Card Details",
             method=ExtendAPITools.GET_VIRTUAL_CARD_DETAIL,
             description="Get details of a virtual card",
             args_schema=VirtualCardDetailSchema,
-            required_permissions=[]
+            required_scope=[]
         )
     ]
 

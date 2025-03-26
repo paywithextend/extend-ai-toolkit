@@ -1,7 +1,8 @@
+from typing import Optional
+
 from agents import FunctionTool
 
 from extend_ai_toolkit.shared import (
-    Agent,
     AgentToolkit,
     Configuration,
     ExtendAPI,
@@ -13,13 +14,16 @@ from .extend_tool import ExtendTool
 class ExtendOpenAIToolkit(AgentToolkit[FunctionTool]):
 
     def __init__(
-            self, api_key: str, api_secret: str, configuration: Configuration = Configuration.all_tools()
+            self,
+            org_id: str,
+            api_key: str,
+            api_secret: str,
+            configuration: Optional[Configuration]
     ):
         super().__init__(
-            agent=Agent.OPENAI,
             api_key=api_key,
             api_secret=api_secret,
-            configuration=configuration
+            configuration=configuration or Configuration.all_tools(org_id)
         )
 
     def tool_for_agent(self, api: ExtendAPI, tool: Tool) -> FunctionTool:

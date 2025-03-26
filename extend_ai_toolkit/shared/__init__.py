@@ -1,6 +1,7 @@
 from . import functions
 from .agent_toolkit import AgentToolkit
-from .configuration import Configuration, Product, ProductPermissions, Permissions, validate_tool_spec
+from .api import ExtendAPI
+from .configuration import Configuration, Product, Scope, Actions, validate_tool_spec
 from .enums import ExtendAPITools, Agent
 from .interfaces import AgentToolInterface
 from .tools import Tool, tools
@@ -10,11 +11,12 @@ __all__ = [
     "AgentToolInterface",
     "Configuration",
     "AgentToolkit",
+    "ExtendAPI",
     "ExtendAPITools",
     "Tool",
     "Product",
-    "ProductPermissions",
-    "Permissions",
+    "Scope",
+    "Actions",
     "tools",
     "functions",
     "validate_tool_spec",

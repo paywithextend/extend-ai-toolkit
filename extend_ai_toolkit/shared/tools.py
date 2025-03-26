@@ -2,7 +2,7 @@ from typing import List, TypedDict, Type
 
 from pydantic import BaseModel
 
-from .configuration import ProductPermissions, Product
+from .configuration import Scope, Product
 from .enums import ExtendAPITools
 from .prompts import (
     get_virtual_cards_prompt,
@@ -27,7 +27,7 @@ class Tool(BaseModel):
     name: str
     description: str
     args_schema: Type[BaseModel]
-    required_permissions: List[ProductPermissions]
+    required_scope: List[Scope]
 
 
 tools: List[Tool] = [
@@ -36,10 +36,10 @@ tools: List[Tool] = [
         name="get_virtual_cards",
         description=get_virtual_cards_prompt,
         args_schema=GetVirtualCards,
-        required_permissions=[
-            ProductPermissions(
+        required_scope=[
+            Scope(
                 type=Product.VIRTUAL_CARDS,
-                permissions={"read": True})
+                actions={"read": True})
         ],
     ),
     Tool(
@@ -47,10 +47,10 @@ tools: List[Tool] = [
         name="get_virtual_card_detail",
         description=get_virtual_card_detail_prompt,
         args_schema=GetVirtualCardDetail,
-        required_permissions=[
-            ProductPermissions(
+        required_scope=[
+            Scope(
                 type=Product.VIRTUAL_CARDS,
-                permissions={"read": True})
+                actions={"read": True})
         ],
     ),
     Tool(
@@ -58,10 +58,10 @@ tools: List[Tool] = [
         name="create_virtual_card",
         description=create_virtual_card_prompt,
         args_schema=CreateVirtualCard,
-        required_permissions=[
-            ProductPermissions(
+        required_scope=[
+            Scope(
                 type=Product.VIRTUAL_CARDS,
-                permissions={
+                actions={
                     "read": True,
                     "create": True,
                 })
@@ -72,10 +72,10 @@ tools: List[Tool] = [
         name="update_virtual_card",
         description=update_virtual_card_prompt,
         args_schema=UpdateVirtualCard,
-        required_permissions=[
-            ProductPermissions(
+        required_scope=[
+            Scope(
                 type=Product.VIRTUAL_CARDS,
-                permissions={
+                actions={
                     "read": True,
                     "update": True,
                 })
@@ -86,10 +86,10 @@ tools: List[Tool] = [
         name="cancel_virtual_card",
         description=cancel_virtual_card_prompt,
         args_schema=CancelVirtualCard,
-        required_permissions=[
-            ProductPermissions(
+        required_scope=[
+            Scope(
                 type=Product.VIRTUAL_CARDS,
-                permissions={
+                actions={
                     "read": True,
                     "update": True,
                 })
@@ -100,10 +100,10 @@ tools: List[Tool] = [
         name="close_virtual_card",
         description=close_virtual_card_prompt,
         args_schema=CloseVirtualCard,
-        required_permissions=[
-            ProductPermissions(
+        required_scope=[
+            Scope(
                 type=Product.VIRTUAL_CARDS,
-                permissions={
+                actions={
                     "read": True,
                     "update": True,
                 })
@@ -114,10 +114,10 @@ tools: List[Tool] = [
         name="get_credit_cards",
         description=get_credit_cards_prompt,
         args_schema=GetCreditCards,
-        required_permissions=[
-            ProductPermissions(
+        required_scope=[
+            Scope(
                 type=Product.CREDIT_CARDS,
-                permissions={
+                actions={
                     "read": True,
                 })
         ],
@@ -127,10 +127,10 @@ tools: List[Tool] = [
         name="get_transactions",
         description=get_transactions_prompt,
         args_schema=GetTransactions,
-        required_permissions=[
-            ProductPermissions(
+        required_scope=[
+            Scope(
                 type=Product.TRANSACTIONS,
-                permissions={
+                actions={
                     "read": True,
                 })
         ],
@@ -140,10 +140,10 @@ tools: List[Tool] = [
         name="get_transaction_detail",
         description=get_transaction_detail_prompt,
         args_schema=GetTransactionDetail,
-        required_permissions=[
-            ProductPermissions(
+        required_scope=[
+            Scope(
                 type=Product.TRANSACTIONS,
-                permissions={
+                actions={
                     "read": True,
                 })
         ],
