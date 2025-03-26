@@ -7,9 +7,7 @@ from mcp.types import AnyFunction
 
 from extend_ai_toolkit.shared import Configuration
 from extend_ai_toolkit.shared import ExtendAPITools
-from extend_ai_toolkit.shared import get_virtual_cards, get_virtual_card_detail, create_virtual_card, \
-    update_virtual_card, \
-    cancel_virtual_card, close_virtual_card, get_transactions, get_transaction_detail, get_credit_cards
+from extend_ai_toolkit.shared import functions
 from extend_ai_toolkit.shared import tools, Tool
 from extend_ai_toolkit.shared.api import ExtendAPI
 
@@ -27,6 +25,7 @@ class ExtendMCPServer(FastMCP):
         )
 
         self._extend = ExtendAPI(
+            org_id=configuration.org_id,
             api_key=api_key,
             api_secret=api_secret
         )
@@ -35,23 +34,23 @@ class ExtendMCPServer(FastMCP):
             fn: Any = None
             match tool.method.value:
                 case ExtendAPITools.GET_VIRTUAL_CARDS.value:
-                    fn = get_virtual_cards
+                    fn = functions.get_virtual_cards
                 case ExtendAPITools.GET_VIRTUAL_CARD_DETAIL.value:
-                    fn = get_virtual_card_detail
+                    fn = functions.get_virtual_card_detail
                 case ExtendAPITools.CREATE_VIRTUAL_CARD.value:
-                    fn = create_virtual_card
+                    fn = functions.create_virtual_card
                 case ExtendAPITools.UPDATE_VIRTUAL_CARD.value:
-                    fn = update_virtual_card
+                    fn = functions.update_virtual_card
                 case ExtendAPITools.CANCEL_VIRTUAL_CARD.value:
-                    fn = cancel_virtual_card
+                    fn = functions.cancel_virtual_card
                 case ExtendAPITools.CLOSE_VIRTUAL_CARD.value:
-                    fn = close_virtual_card
+                    fn = functions.close_virtual_card
                 case ExtendAPITools.GET_TRANSACTIONS.value:
-                    fn = get_transactions
+                    fn = functions.get_transactions
                 case ExtendAPITools.GET_TRANSACTION_DETAIL.value:
-                    fn = get_transaction_detail
+                    fn = functions.get_transaction_detail
                 case ExtendAPITools.GET_CREDIT_CARDS.value:
-                    fn = get_credit_cards
+                    fn = functions.get_credit_cards
                 case _:
                     raise ValueError(f"Invalid tool {tool}")
 
