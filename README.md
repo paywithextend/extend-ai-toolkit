@@ -32,10 +32,16 @@ pip install extend_ai_toolkit@git+https://github.com/paywithextend/extend-ai-too
 
 ## Usage
 
-The library needs to be configured with your Extend api key and api secret either through environment variables or command line arguments
+The library needs to be configured with your Extend api key, api secret, and organization id, either through environment variables or command line arguments
+
+```
+--api-key=your_api_key_here --api-secret=your_api_secret_here --org-id=your_org_id_here
+```
+or
 ```
 EXTEND_API_KEY=your_api_key_here
 EXTEND_API_SECRET=your_api_secret_here
+ORGANIZATION_ID=your_org_id_here
 ```
 
 ### Model Context Protocol 
@@ -68,7 +74,8 @@ On Windows: `%APPDATA%/Claude/claude_desktop_config.json`
     ],
     "env": {
       "EXTEND_API_KEY": "apik_XXXX",
-      "EXTEND_API_SECRET": "XXXXX"
+      "EXTEND_API_SECRET": "XXXXX",
+      "ORGANIZATION_ID": "org_XXXX"
     }
   }
 ```
@@ -80,12 +87,12 @@ For advanced scenarios like custom deployments or running without Claude, you ca
 
 STDIO Transport:
 ```
-python -m extend_ai_toolkit.modelcontextprotocol.main --tools=virtual_cards.read,credit_cards.read --api-key=apik_XXXX --api-secret=XXXX
+python -m extend_ai_toolkit.modelcontextprotocol.main --tools=virtual_cards.read,credit_cards.read --api-key=apik_XXXX --api-secret=XXXX --org-id=org_XXXX
 ```
 
 SSE Transport:
 ```
-python -m extend_ai_toolkit.modelcontextprotocol.main_sse --tools=virtual_cards.read,credit_cards.read --api-key=apik_XXXX --api-secret=XXXX
+python -m extend_ai_toolkit.modelcontextprotocol.main_sse --tools=virtual_cards.read,credit_cards.read --api-key=apik_XXXX --api-secret=XXXX --org-id=org_XXXX
 ```
 
 Additionally, You can connect to your SSE server using our custom MCP terminal client
@@ -109,13 +116,14 @@ load_dotenv()
 
 server = ExtendMCPServer(    
     api_key=os.environ.get("EXTEND_API_KEY"),
-    api_secret=s.environ.get("EXTEND_API_SECRET"),
+    api_secret=s.environ.get("EXTEND_API_SECRET"),    
     configuration=Configuration(
         product_permissions=[
             ProductPermissions(Product.VIRTUAL_CARDS, permissions=Permissions(create=True, update=True, read=True)),
             ProductPermissions(Product.CREDIT_CARDS, permissions=Permissions(read=True)),
             ProductPermissions(Product.TRANSACTIONS, permissions=Permissions(read=True)),
-        ]
+        ],
+        org_id=os.environ.get("EXTEND_API_SECRET")
     )
 )
 
@@ -152,16 +160,17 @@ llm = ChatOpenAI(
 )
 
 extend_langchain_toolkit = ExtendLangChainToolkit(
-    api_key="apik_...",
-    api_secret="...",
+    org_id=os.environ.get("EXTEND_API_SECRET"),    
+    api_key=os.environ.get("EXTEND_API_KEY"),
+    api_secret=s.environ.get("EXTEND_API_SECRET"),
     configuration=Configuration(
         product_permissions=[
             ProductPermissions(Product.VIRTUAL_CARDS, permissions=Permissions(create=True, update=True, read=True)),
             ProductPermissions(Product.CREDIT_CARDS, permissions=Permissions(read=True)),
             ProductPermissions(Product.TRANSACTIONS, permissions=Permissions(read=True)),
-        ]
+        ],
+        org_id=os.environ.get("EXTEND_API_SECRET")
     )
-)
 )
 
 tools = []
