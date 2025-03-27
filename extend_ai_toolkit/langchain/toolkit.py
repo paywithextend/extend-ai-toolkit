@@ -1,3 +1,5 @@
+from typing import Optional
+
 from extend_ai_toolkit.shared import (
     AgentToolkit,
     Configuration,
@@ -14,14 +16,14 @@ class ExtendLangChainToolkit(AgentToolkit[ExtendTool]):
             org_id: str,
             api_key: str,
             api_secret: str,
-            configuration: Configuration = Configuration.all_tools()
+            configuration: Optional[Configuration]
     ):
         configuration.org_id = org_id
 
         super().__init__(
             api_key=api_key,
             api_secret=api_secret,
-            configuration=configuration
+            configuration=configuration or Configuration.all_tools(org_id)
         )
 
     def tool_for_agent(self, api: ExtendAPI, tool: Tool) -> ExtendTool:

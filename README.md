@@ -107,21 +107,17 @@ Example of setting up your own MCP server:
 import os
 import sys
 
-from dotenv import load_dotenv
-
 from extend_ai_toolkit.modelcontextprotocol.server import ExtendMCPServer
-from extend_ai_toolkit.shared import Configuration, ProductPermissions, Product, Permissions
-
-load_dotenv()
+from extend_ai_toolkit.shared import Configuration, Scope, Product, Actions
 
 server = ExtendMCPServer(    
     api_key=os.environ.get("EXTEND_API_KEY"),
     api_secret=s.environ.get("EXTEND_API_SECRET"),    
     configuration=Configuration(
-        product_permissions=[
-            ProductPermissions(Product.VIRTUAL_CARDS, permissions=Permissions(create=True, update=True, read=True)),
-            ProductPermissions(Product.CREDIT_CARDS, permissions=Permissions(read=True)),
-            ProductPermissions(Product.TRANSACTIONS, permissions=Permissions(read=True)),
+        scope=[
+            Scope(Product.VIRTUAL_CARDS, actions=Actions(create=True, update=True, read=True)),
+            Scope(Product.CREDIT_CARDS, actions=Actions(read=True)),
+            Scope(Product.TRANSACTIONS, actions=Actions(read=True)),
         ],
         org_id=os.environ.get("EXTEND_API_SECRET")
     )
@@ -136,7 +132,44 @@ if __name__ == "__main__":
 
 ### OpenAI
 
-TODO
+The toolkit works with OpenAI and can be passed as a list of tools. For example:
+
+```
+import os
+
+from agents import Agent
+
+from extend_ai_toolkit.openai.toolkit import ExtendOpenAIToolkit
+from extend_ai_toolkit.shared import Configuration, Scope, Product, Actions
+    
+api_key = os.environ.get("EXTEND_API_KEY")
+api_secret = os.environ.get("EXTEND_API_SECRET")
+org_id = os.environ.get("ORGANIZATION_ID")
+
+llm = ChatOpenAI(
+    model="gpt-4o",
+)
+
+extend_openai_toolkit = ExtendOpenAIToolkit(
+    org_id,    
+    api_key,
+    api_secret,
+    Configuration(
+      scope=[
+        Scope(Product.VIRTUAL_CARDS, actions=Actions(create=True, update=True, read=True)),
+        Scope(Product.CREDIT_CARDS, actions=Actions(read=True)),
+        Scope(Product.TRANSACTIONS, actions=Actions(read=True)),
+       ],
+       org_id=org_id
+    )  
+)
+
+extend_agent = Agent(
+    name="Extend Agent",
+    instructions="You are an expert at integrating with Extend",
+    tools=extend_openai_toolkit.get_tools()
+)
+```
 
 
 ### LangChain
@@ -145,31 +178,32 @@ The toolkit works with LangChain and can be passed as a list of tools. For examp
 
 ```
 import os
-from dotenv import load_dotenv
 
 from langchain_openai import ChatOpenAI
 from langgraph.prebuilt import create_react_agent
 
 from extend_ai_toolkit.langchain.toolkit import ExtendLangChainToolkit
-from extend_ai_toolkit.shared import Configuration, ProductPermissions, Product, Permissions
+from extend_ai_toolkit.shared import Configuration, Scope, Product, Actions
 
-load_dotenv()
+api_key = os.environ.get("EXTEND_API_KEY")
+api_secret = os.environ.get("EXTEND_API_SECRET")
+org_id = os.environ.get("ORGANIZATION_ID")
 
 llm = ChatOpenAI(
     model="gpt-4o",
 )
 
 extend_langchain_toolkit = ExtendLangChainToolkit(
-    org_id=os.environ.get("EXTEND_API_SECRET"),    
-    api_key=os.environ.get("EXTEND_API_KEY"),
-    api_secret=s.environ.get("EXTEND_API_SECRET"),
-    configuration=Configuration(
-        product_permissions=[
-            ProductPermissions(Product.VIRTUAL_CARDS, permissions=Permissions(create=True, update=True, read=True)),
-            ProductPermissions(Product.CREDIT_CARDS, permissions=Permissions(read=True)),
-            ProductPermissions(Product.TRANSACTIONS, permissions=Permissions(read=True)),
-        ],
-        org_id=os.environ.get("EXTEND_API_SECRET")
+    org_id,    
+    api_key,
+    api_secret,
+    Configuration(
+      scope=[
+        Scope(Product.VIRTUAL_CARDS, actions=Actions(create=True, update=True, read=True)),
+        Scope(Product.CREDIT_CARDS, actions=Actions(read=True)),
+        Scope(Product.TRANSACTIONS, actions=Actions(read=True)),
+       ],
+       org_id=org_id
     )
 )
 

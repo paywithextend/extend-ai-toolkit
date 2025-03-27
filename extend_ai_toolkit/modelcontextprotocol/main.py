@@ -5,13 +5,13 @@ from dotenv import load_dotenv
 
 from extend_ai_toolkit.modelcontextprotocol import ExtendMCPServer, Options
 from extend_ai_toolkit.shared import Configuration
-from extend_ai_toolkit.shared.configuration import VALID_PRODUCT_PERMISSIONS
+from extend_ai_toolkit.shared.configuration import VALID_SCOPES
 
 load_dotenv()
 
 
 def build_server():
-    options = Options.from_args((sys.argv[1:]), VALID_PRODUCT_PERMISSIONS)
+    options = Options.from_args((sys.argv[1:]), VALID_SCOPES)
     selected_tools = options.tools
     configuration = Configuration.from_tool_str(selected_tools, options.org_id)
 
