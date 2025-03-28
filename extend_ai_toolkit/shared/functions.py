@@ -120,8 +120,8 @@ async def create_virtual_card(
 async def update_virtual_card(
         extend: ExtendClient,
         virtual_card_id: str,
-        display_name: Optional[str] = None,
-        balance_dollars: Optional[float] = None,
+        display_name: str,
+        balance_dollars: float,
         valid_from: Optional[str] = None,
         valid_to: Optional[str] = None,
         notes: Optional[str] = None
@@ -151,8 +151,8 @@ async def update_virtual_card(
         return response
 
     except Exception as e:
-        logger.error("Error creating virtual card: %s", e)
-        raise Exception("Error creating virtual card")
+        logger.error("Error updating virtual card: %s", e)
+        raise Exception("Error updating virtual card")
 
 
 async def close_virtual_card(extend: ExtendClient, virtual_card_id: str) -> Dict:
