@@ -54,5 +54,29 @@ class ExtendAPI:
             case ExtendAPITools.GET_CREDIT_CARDS.value:
                 output = await get_credit_cards(self.extend, *args, **kwargs)
                 return format_credit_cards_list(output)
+            case ExtendAPITools.GET_CREDIT_CARD_DETAIL.value:
+                output = await get_credit_card_detail(self.extend, *args, **kwargs)
+                return format_credit_card_detail(output)
+            case ExtendAPITools.GET_EXPENSE_CATEGORIES.value:
+                output = await get_expense_categories(self.extend, *args, **kwargs)
+                return json.dumps(output)
+            case ExtendAPITools.GET_EXPENSE_CATEGORY.value:
+                output = await get_expense_category(self.extend, *args, **kwargs)
+                return json.dumps(output)
+            case ExtendAPITools.GET_EXPENSE_CATEGORY_LABELS.value:
+                output = await get_expense_category_labels(self.extend, *args, **kwargs)
+                return json.dumps(output)
+            case ExtendAPITools.CREATE_EXPENSE_CATEGORY.value:
+                output = await create_expense_category(self.extend, *args, **kwargs)
+                return json.dumps(output)
+            case ExtendAPITools.CREATE_EXPENSE_CATEGORY_LABEL.value:
+                output = await create_expense_category_label(self.extend, *args, **kwargs)
+                return json.dumps(output)
+            case ExtendAPITools.UPDATE_EXPENSE_CATEGORY.value:
+                output = await update_expense_category(self.extend, *args, **kwargs)
+                return json.dumps(output)
+            case ExtendAPITools.UPDATE_EXPENSE_CATEGORY_LABEL.value:
+                output = await update_expense_category_label(self.extend, *args, **kwargs)
+                return json.dumps(output)
             case _:
                 raise ValueError(f"Invalid tool {tool}")

@@ -41,10 +41,9 @@ It takes many arguments:
 update_virtual_card_prompt = """
 This tool will get update a virtual card in Extend.
 It takes many arguments:
-- card_id: ID of the virtual card to update
-- display_name: New name for the virtual card
-- balance_dollars: New balance for the card in dollars
-- valid_from: New start date (YYYY-MM-DD)
+- card_id (required): ID of the virtual card to update
+- display_name (required): New or existing name for the virtual card
+- balance_dollars (required): New or existing balance for the card in dollars
 - valid_to: New end date (YYYY-MM-DD)
 - notes: New notes for the card
 """
@@ -68,6 +67,13 @@ It takes two argument:
 - per_page (int): the number of credit cards per page.
 """
 
+get_credit_card_detail_prompt = """
+This tool will get details of a specific credit card in Extend.
+It takes one argument:
+- credit_card_id (str): The ID of the credit card.
+The response is a JSON object with detailed information about the credit card.
+"""
+
 get_transactions_prompt = """
 This tool will get a list of transactions in Extend.
 It takes two argument:
@@ -79,4 +85,81 @@ get_transaction_detail_prompt = """
 This tool will get a transaction detail in Extend.
 It takes one argument:
 - transaction_id (str): The ID of the transaction card.
+"""
+
+# Expense Data Functions Prompts
+
+get_expense_categories_prompt = """
+This tool will get a list of expense categories in Extend.
+It takes the following optional arguments:
+- active (Optional[bool]): Filter categories by active status.
+- required (Optional[bool]): Filter categories by required status.
+- search (Optional[str]): Search term to filter categories.
+- sort_field (Optional[str]): Field to sort the categories by.
+- sort_direction (Optional[str]): Direction to sort (ASC or DESC).
+The response is a JSON object containing a list of expense categories.
+"""
+
+get_expense_category_prompt = """
+This tool will get detailed information about a specific expense category in Extend.
+It takes one argument:
+- category_id (str): The ID of the expense category.
+The response is a JSON object with detailed information about the expense category.
+"""
+
+get_expense_category_labels_prompt = """
+This tool will get a paginated list of expense category labels in Extend.
+It takes the following arguments:
+- category_id (str): The ID of the expense category.
+- page (Optional[int]): The page number for pagination.
+- per_page (Optional[int]): The number of labels per page.
+- active (Optional[bool]): Filter labels by active status.
+- search (Optional[str]): Search term to filter labels.
+- sort_field (Optional[str]): Field to sort the labels by.
+- sort_direction (Optional[str]): Direction to sort (ASC or DESC).
+The response is a JSON object containing the paginated list of expense category labels.
+"""
+
+create_expense_category_prompt = """
+This tool will create a new expense category in Extend.
+It takes the following arguments:
+- name (str): The name of the expense category.
+- code (str): A unique code for the expense category.
+- required (bool): Indicates whether the expense category is required.
+- active (Optional[bool]): The active status of the category.
+- free_text_allowed (Optional[bool]): Indicates if free text is allowed.
+The response is a JSON object with the created expense category details.
+"""
+
+create_expense_category_label_prompt = """
+This tool will create a new expense category label in Extend.
+It takes the following arguments:
+- category_id (str): The ID of the expense category.
+- name (str): The name of the expense category label.
+- code (str): A unique code for the expense category label.
+- active (bool): The active status of the label (defaults to True).
+The response is a JSON object with the created expense category label details.
+"""
+
+update_expense_category_prompt = """
+This tool will update an existing expense category in Extend.
+It takes the following arguments:
+- category_id (str): The ID of the expense category to update.
+Optional arguments include:
+- name (Optional[str]): The new name for the expense category.
+- active (Optional[bool]): The updated active status.
+- required (Optional[bool]): The updated required status.
+- free_text_allowed (Optional[bool]): Indicates if free text is allowed.
+The response is a JSON object with the updated expense category details.
+"""
+
+update_expense_category_label_prompt = """
+This tool will update an existing expense category label in Extend.
+It takes the following arguments:
+- category_id (str): The ID of the expense category.
+- label_id (str): The ID of the expense category label to update.
+Optional arguments include:
+- name (Optional[str]): The new name for the label.
+- active (Optional[bool]): The updated active status of the label.
+The response is a JSON object with the updated expense category label details.
 """

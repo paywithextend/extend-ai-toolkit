@@ -168,6 +168,29 @@ def format_credit_cards_list(response: Dict) -> str:
     return result
 
 
+def format_credit_card_detail(response: Dict) -> str:
+    """Format the credit card detail response"""
+    card = response.get("creditCard", {})
+    if not card:
+        return "No credit card found."
+
+    card_features = card['features'] or {}
+    return (
+        f"Credit Card Details:\n\n"
+        f"- ID: {card['id']}\n"
+        f"  Name: {card['displayName']}\n"
+        f"  Card User: {card['user']['firstName']} {card['user']['lastName']}\n"
+        f"  Is Budget: {card['parentCreditCardId'] is not None}\n"
+        f"  Status: {card['status']}\n"
+        f"  Last 4: {card['last4']}\n"
+        f"  Issuer: {card['issuerName']}\n"
+        f"  Guest Cards Enabled: {card_features['direct']}\n"
+        f"  Receipt Management Enabled: {card_features['receiptManagementEnabled']}\n"
+        f"  Receipt Capture Enabled: {card_features['receiptCaptureEnabled']}\n"
+        f"  Bill Pay Enabled: {card_features['billPay']}\n\n"
+    )
+
+
 def format_transaction_details(response: Dict) -> str:
     """Format the transaction detail response"""
     txn = response

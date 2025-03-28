@@ -51,6 +51,22 @@ class ExtendMCPServer(FastMCP):
                     fn = functions.get_transaction_detail
                 case ExtendAPITools.GET_CREDIT_CARDS.value:
                     fn = functions.get_credit_cards
+                case ExtendAPITools.GET_CREDIT_CARD_DETAIL.value:
+                    fn = functions.get_credit_card_detail
+                case ExtendAPITools.GET_EXPENSE_CATEGORIES.value:
+                    fn = functions.get_expense_categories
+                case ExtendAPITools.GET_EXPENSE_CATEGORY.value:
+                    fn = functions.get_expense_category
+                case ExtendAPITools.GET_EXPENSE_CATEGORY_LABELS.value:
+                    fn = functions.get_expense_category_labels
+                case ExtendAPITools.CREATE_EXPENSE_CATEGORY.value:
+                    fn = functions.create_expense_category
+                case ExtendAPITools.CREATE_EXPENSE_CATEGORY_LABEL.value:
+                    fn = functions.create_expense_category_label
+                case ExtendAPITools.UPDATE_EXPENSE_CATEGORY.value:
+                    fn = functions.update_expense_category
+                case ExtendAPITools.UPDATE_EXPENSE_CATEGORY_LABEL.value:
+                    fn = functions.update_expense_category_label
                 case _:
                     raise ValueError(f"Invalid tool {tool}")
 
