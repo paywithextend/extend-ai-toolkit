@@ -1,5 +1,3 @@
-# test_validate_tool_spec.py
-
 import pytest
 
 from extend_ai_toolkit.shared import validate_tool_spec, Product, Actions
@@ -15,6 +13,11 @@ def test_validate_tool_spec_valid():
     product, action = validate_tool_spec("credit_cards.create")
     assert product == Product.CREDIT_CARDS
     assert action == "create"
+
+    # Additional valid input: "expense_categories.read"
+    product, action = validate_tool_spec("expense_categories.read")
+    assert product == Product.EXPENSE_CATEGORIES
+    assert action == "read"
 
 
 def test_validate_tool_spec_invalid_format():

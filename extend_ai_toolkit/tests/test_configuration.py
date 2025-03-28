@@ -9,6 +9,7 @@ from extend_ai_toolkit.shared import (
     Configuration,
     Product,
     Actions,
+    Scope,
 )
 
 
@@ -35,10 +36,9 @@ class Tool:
 # Test that the classmethod all_tools creates a configuration with the expected defaults.
 def test_all_tools_configuration():
     config = Configuration.all_tools(org_id="test_org_id")
-    # Expecting three tool scopes
     assert config.scope is not None
-    assert config.org_id is "test_org_id"
-    assert len(config.scope) == 3
+    assert config.org_id == "test_org_id"
+    assert len(config.scope) == 4
     # Check that each default scope is set as expected.
     for pp in config.scope:
         if pp.type == Product.CREDIT_CARDS:
@@ -49,9 +49,15 @@ def test_all_tools_configuration():
             assert pp.actions.get("update") is True
         elif pp.type == Product.TRANSACTIONS:
             assert pp.actions.get("read") is True
+        elif pp.type == Product.EXPENSE_CATEGORIES:
+            assert pp.actions.get("read") is True
+            assert pp.actions.get("create") is True
+            assert pp.actions.get("update") is True
+        else:
+            raise ValueError(f"Unexpected product type in configuration: {pp.type}")
 
 
-# Test is_tool_in_scope returns True when tool requirements match configuration
+# Test is_tool_in_scope returns True when tool requirements match configuration.
 def test_is_tool_in_scope_success():
     config = Configuration.all_tools()
     # Create a tool that requires credit_cards.read scope.
@@ -64,10 +70,21 @@ def test_is_tool_in_scope_success():
     assert config.is_tool_in_scope(tool) is True
 
 
+def test_is_tool_in_scope_with_limited_scope_success():
+    config = Configuration(scope=[Scope(Product.VIRTUAL_CARDS, actions=Actions(create=True))])
+    # Create a tool that requires virtual_cards.create scope.
+    tool_perm = ToolScope(
+        product_type=Product.VIRTUAL_CARDS,
+        actions=Actions(create=True)
+    )
+    tool = Tool(name="Tool1", required_scope=[tool_perm])
+    assert config.is_tool_in_scope(tool) is True
+
+
 # Test is_tool_in_scope returns False when a required scope is missing.
 def test_is_tool_in_scope_failure_missing_scope_action():
     config = Configuration.all_tools()
-    # For TRANSACTIONS, the default configuration allows read and update.
+    # For TRANSACTIONS, the default configuration allows read.
     # Here we require a 'create' action which is not allowed.
     tool_perm = ToolScope(
         product_type=Product.TRANSACTIONS,
@@ -80,7 +97,7 @@ def test_is_tool_in_scope_failure_missing_scope_action():
 # Test allowed_tools returns only the tools that meet the scope requirements.
 def test_allowed_tools():
     config = Configuration.all_tools()
-    # Tool1 meets its requirement (credit_cards with create True)
+    # Tool1 meets its requirement (credit_cards with read True)
     tool1 = Tool(
         name="Tool1",
         required_scope=[
@@ -114,14 +131,25 @@ def test_allowed_tools():
             )
         ]
     )
+    # Tool4 for expense categories; requires read access.
+    tool4 = Tool(
+        name="Tool4",
+        required_scope=[
+            ToolScope(
+                product_type=Product.EXPENSE_CATEGORIES,
+                actions=Actions(read=True)
+            )
+        ]
+    )
 
     # Get allowed tools from configuration.
-    allowed = config.allowed_tools([tool1, tool2, tool3])
+    allowed = config.allowed_tools([tool1, tool2, tool3, tool4])
     allowed_names = [tool.name for tool in allowed]
 
-    # Tool1 and Tool3 should be allowed, Tool2 should not.
+    # Tool1, Tool3, and Tool4 should be allowed; Tool2 should not.
     assert "Tool1" in allowed_names
     assert "Tool3" in allowed_names
+    assert "Tool4" in allowed_names
     assert "Tool2" not in allowed_names
 
 

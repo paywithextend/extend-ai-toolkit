@@ -2,7 +2,7 @@ from . import functions
 from .agent_toolkit import AgentToolkit
 from .api import ExtendAPI
 from .configuration import Configuration, Product, Scope, Actions, validate_tool_spec
-from .enums import ExtendAPITools, Agent
+from .enums import ExtendAPITools, Agent, Action
 from .interfaces import AgentToolInterface
 from .tools import Tool, tools
 
@@ -16,6 +16,7 @@ __all__ = [
     "Tool",
     "Product",
     "Scope",
+    "Action",
     "Actions",
     "tools",
     "functions",

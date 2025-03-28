@@ -1,5 +1,6 @@
 import asyncio
 import os
+import uuid
 from datetime import datetime, timedelta
 
 import pytest
@@ -13,7 +14,8 @@ from extend_ai_toolkit.shared.functions import (
     create_virtual_card,
     update_virtual_card,
     cancel_virtual_card,
-    close_virtual_card
+    close_virtual_card, create_expense_category, create_expense_category_label, get_expense_category_labels,
+    update_expense_category_label, get_expense_categories, get_expense_category, update_expense_category
 )
 
 load_dotenv()
@@ -258,6 +260,160 @@ class TestRecurringCards:
 
         close_response = await close_virtual_card(extend=extend, virtual_card_id=card_id)
         assert close_response["virtualCard"]["status"] == "CLOSED"
+
+
+@pytest.mark.integration
+class TestExpenseData:
+    """Integration tests for expense category and label endpoints"""
+
+    @pytest.mark.asyncio
+    async def test_list_expense_categories(self, extend):
+        """Test getting a list of expense categories"""
+        response = await get_expense_categories(extend=extend)
+        # Adjust the key based on your API's response structure
+        assert isinstance(response, dict)
+        # Example: if your response contains a key "expenseCategories"
+        assert "expenseCategories" in response or "categories" in response
+
+    @pytest.mark.asyncio
+    async def test_create_and_get_expense_category(self, extend):
+        """Test creating an expense category and then retrieving it"""
+        # Create a new expense category with unique values
+        category_name = f"Integration Test Category {str(uuid.uuid4())[:8]}"
+        category_code = f"ITC{str(uuid.uuid4())[:8]}"
+        create_response = await create_expense_category(
+            extend=extend,
+            name=category_name,
+            code=category_code,
+            required=True,
+            active=True,
+            free_text_allowed=False,
+        )
+        category = create_response
+        assert category, "Expense category creation failed"
+        category_id = category["id"]
+
+        # Retrieve the created category
+        get_response = await get_expense_category(extend=extend, category_id=category_id)
+        retrieved_category = get_response
+        assert retrieved_category, "Expense category retrieval failed"
+        assert retrieved_category["id"] == category_id
+
+    @pytest.mark.asyncio
+    async def test_update_expense_category(self, extend):
+        """Test updating an expense category"""
+        category_name = f"Integration Test Category {str(uuid.uuid4())[:8]}"
+        category_code = f"ITC{str(uuid.uuid4())[:8]}"
+        create_response = await create_expense_category(
+            extend=extend,
+            name=category_name,
+            code=category_code,
+            required=False,
+            active=True,
+            free_text_allowed=False,
+        )
+        category = create_response
+        category_id = category["id"]
+
+        # Update the expense category
+        new_name = f"Updated Category {str(uuid.uuid4())[:8]}"
+        update_response = await update_expense_category(
+            extend=extend,
+            category_id=category_id,
+            name=new_name,
+            active=False,
+            required=False,
+            free_text_allowed=True,
+        )
+        updated_category = update_response
+        assert updated_category, "Expense category update failed"
+        assert updated_category["name"] == new_name
+        assert updated_category["active"] is False
+
+    @pytest.mark.asyncio
+    async def test_create_and_list_expense_category_labels(self, extend):
+        """Test creating an expense category label and listing labels for a category"""
+        # Create a new expense category first
+        category_name = f"Integration Test Category {str(uuid.uuid4())[:8]}"
+        category_code = f"ITC{str(uuid.uuid4())[:8]}"
+        create_cat_response = await create_expense_category(
+            extend=extend,
+            name=category_name,
+            code=category_code,
+            required=True,
+            active=True,
+            free_text_allowed=False,
+        )
+        category = create_cat_response
+        category_id = category["id"]
+
+        # Create a new label for this expense category
+        label_name = f"Label {str(uuid.uuid4())[:8]}"
+        label_code = f"LBL{str(uuid.uuid4())[:8]}"
+        create_label_response = await create_expense_category_label(
+            extend=extend,
+            category_id=category_id,
+            name=label_name,
+            code=label_code,
+            active=True
+        )
+        label = create_label_response
+        assert label, "Expense category label creation failed"
+        label_id = label["id"]
+
+        # List labels for the expense category
+        list_labels_response = await get_expense_category_labels(
+            extend=extend,
+            category_id=category_id,
+            page=0,
+            per_page=10
+        )
+        labels = list_labels_response.get("expenseLabels")
+        assert labels is not None, "Expense category labels not found in response"
+        # Verify that the newly created label is present in the list
+        assert any(l["id"] == label_id for l in labels), "Created label not found in list"
+
+    @pytest.mark.asyncio
+    async def test_update_expense_category_label(self, extend):
+        """Test updating an expense category label"""
+        # Create a new expense category first
+        category_name = f"Integration Test Category {str(uuid.uuid4())[:8]}"
+        category_code = f"ITC{str(uuid.uuid4())[:8]}"
+        create_cat_response = await create_expense_category(
+            extend=extend,
+            name=category_name,
+            code=category_code,
+            required=True,
+            active=True,
+            free_text_allowed=False,
+        )
+        category = create_cat_response
+        category_id = category["id"]
+
+        # Create a new label for this category
+        label_name = f"Label {str(uuid.uuid4())[:8]}"
+        label_code = f"LBL{str(uuid.uuid4())[:8]}"
+        create_label_response = await create_expense_category_label(
+            extend=extend,
+            category_id=category_id,
+            name=label_name,
+            code=label_code,
+            active=True
+        )
+        label = create_label_response
+        label_id = label["id"]
+
+        # Update the expense category label
+        new_label_name = f"Updated Label {str(uuid.uuid4())[:8]}"
+        update_label_response = await update_expense_category_label(
+            extend=extend,
+            category_id=category_id,
+            label_id=label_id,
+            name=new_label_name
+        )
+        updated_label = update_label_response
+        assert updated_label, "Expense category label update failed"
+        assert updated_label["name"] == new_label_name
 
 
 def test_environment_variables():
