@@ -101,8 +101,8 @@ def format_transactions_list(response: Dict) -> str:
         return response
 
     # Get report data
-    report = response.get("pagination", {})
-    transactions = response.get("transactions", [])
+    report = response.get("report", {})
+    transactions = report.get("transactions", [])
     if not transactions:
         return "No transactions found."
 
