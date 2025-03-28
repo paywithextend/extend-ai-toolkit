@@ -220,7 +220,7 @@ async def get_transactions(
 async def get_transaction_detail(extend: ExtendClient, transaction_id: str) -> Dict:
     """Get a transaction detail"""
     try:
-        response = await extend.transactions.get_transaction_detail(transaction_id)
+        response = await extend.transactions.get_transaction(transaction_id)
         return response
 
     except Exception as e:

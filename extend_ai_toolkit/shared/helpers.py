@@ -170,7 +170,7 @@ def format_credit_cards_list(response: Dict) -> str:
 
 def format_transaction_details(response: Dict) -> str:
     """Format the transaction detail response"""
-    txn = response.get("transaction", {})
+    txn = response
     if not txn:
         return "Transaction not found."
 
