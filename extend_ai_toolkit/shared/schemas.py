@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Dict, List
 
 from pydantic import BaseModel, Field
 
@@ -188,6 +188,80 @@ class GetTransactionDetail(BaseModel):
     transaction_id: str = Field(
         ...,
         description="The ID of the transaction to retrieve details for.",
+    )
+
+
+class ProposeTransactionExpenseData(BaseModel):
+    """Schema for the `propose_transaction_expense_data` operation."""
+
+    transaction_id: str = Field(
+        ...,
+        description="The unique identifier of the transaction.",
+    )
+    data: Dict = Field(
+        ...,
+        description="""
+                    A dictionary representing the expense details to propose. The shape of the data dictionary is as follows:
+                    {                         
+                        'expenseDetails': [{'categoryId': str, 'labelId': str}],                         
+                    }
+                    """,
+    )
+
+
+class ProposeTransactionExpenseDataResponse(BaseModel):
+    """Response schema for the `propose_transaction_expense_data` operation."""
+
+    status: str = Field(
+        default="pending_confirmation",
+        description="Status of the expense data proposal.",
+    )
+    transaction_id: str = Field(
+        ...,
+        description="The unique identifier of the transaction.",
+    )
+    confirmation_token: str = Field(
+        ...,
+        description="The unique token required to confirm this expense data update.",
+    )
+    expires_at: str = Field(
+        ...,
+        description="ISO-8601 timestamp when this proposal expires.",
+    )
+    proposed_categories: List[Dict] = Field(
+        ...,
+        description="List of proposed expense categories and labels.",
+    )
+
+
+class ConfirmTransactionExpenseData(BaseModel):
+    """Schema for the `confirm_transaction_expense_data` operation."""
+
+    confirmation_token: str = Field(
+        ...,
+        description="The unique token from the proposal step that was shared with the user.",
+    )
+
+
+class UpdateTransactionExpenseData(BaseModel):
+    """Schema for the `update_transaction_expense_data` operation."""
+
+    transaction_id: str = Field(
+        ...,
+        description="The unique identifier of the transaction.",
+    )
+    user_confirmed_data_values: bool = Field(
+        ...,
+        description="Indicates whether or not the user has confirmed the specific values used in the data argument.",
+    )
+    data: Dict = Field(
+        ...,
+        description="""
+                    A dictionary representing the expense details to update. The shape of the data dictionary is as follows:
+                    {                         
+                        'expenseDetails': [{'categoryId': str, 'labelId': str}],                         
+                    }
+                    """,
     )
 
 

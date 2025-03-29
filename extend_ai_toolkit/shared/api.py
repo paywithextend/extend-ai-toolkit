@@ -78,5 +78,14 @@ class ExtendAPI:
             case ExtendAPITools.UPDATE_EXPENSE_CATEGORY_LABEL.value:
                 output = await update_expense_category_label(self.extend, *args, **kwargs)
                 return json.dumps(output)
+            case ExtendAPITools.UPDATE_TRANSACTION_EXPENSE_DATA.value:
+                output = await update_transaction_expense_data(self.extend, *args, **kwargs)
+                return json.dumps(output)
+            case ExtendAPITools.PROPOSE_EXPENSE_CATEGORY_LABEL.value:
+                output = await propose_transaction_expense_data(self.extend, *args, **kwargs)
+                return json.dumps(output)
+            case ExtendAPITools.CONFIRM_EXPENSE_CATEGORY_LABEL.value:
+                output = await confirm_transaction_expense_data(self.extend, *args, **kwargs)
+                return json.dumps(output)
             case _:
                 raise ValueError(f"Invalid tool {tool}")

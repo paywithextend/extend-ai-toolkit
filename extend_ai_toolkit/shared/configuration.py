@@ -13,6 +13,7 @@ VALID_SCOPES = [
     'virtual_cards.read',
     'credit_cards.read',
     'transactions.read',
+    'transactions.update',
     'expense_categories.read',
     'expense_categories.create',
     'expense_categories.update',

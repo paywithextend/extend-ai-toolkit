@@ -15,7 +15,8 @@ from extend_ai_toolkit.shared.functions import (
     update_virtual_card,
     cancel_virtual_card,
     close_virtual_card, create_expense_category, create_expense_category_label, get_expense_category_labels,
-    update_expense_category_label, get_expense_categories, get_expense_category, update_expense_category
+    update_expense_category_label, get_expense_categories, get_expense_category, update_expense_category,
+    get_transactions, update_transaction_expense_data
 )
 
 load_dotenv()
@@ -198,7 +199,7 @@ class TestTransactions:
     async def test_list_transactions(self, extend):
         """Test listing transactions with various filters"""
         # Get transactions
-        response = await extend.transactions.get_transactions()
+        response = await get_transactions(extend)
 
         # Verify response structure
         assert isinstance(response, dict), "Response should be a dictionary"
@@ -211,6 +212,61 @@ class TestTransactions:
             required_fields = ["id", "status", "virtualCardId", "merchantName", "type", "authBillingAmountCents"]
             for field in required_fields:
                 assert field in transaction, f"Transaction should contain '{field}' field"
+
+    @pytest.mark.asyncio
+    async def test_update_transaction_expense_data(self, extend):
+        """Test updating transaction expense data"""
+        # Get a single transaction
+        transactions_response = await get_transactions(extend, page=0, per_page=1)
+        assert "transactions" in transactions_response, "No transactions found"
+        transaction = transactions_response["transactions"][0]
+        transaction_id = transaction["id"]
+
+        # Update the transaction to have no expense categories
+        data_no_expense_categories = {
+            "expenseDetails": []
+        }
+        response_no_expense_categories = await update_transaction_expense_data(
+            extend,
+            transaction_id,
+            data_no_expense_categories
+        )
+        assert isinstance(response_no_expense_categories, dict), "Response should be a dictionary"
+        assert response_no_expense_categories["id"] == transaction_id, "Transaction ID should match the input"
+        assert "expenseCategories" not in response_no_expense_categories, "Expense categories should not exist on response"
+
+        # Get an expense category and one of its labels
+        expense_categories_response = await get_expense_categories(extend=extend, active=True)
+        assert "expenseCategories" in expense_categories_response, "No expense categories found"
+        expense_category = expense_categories_response["expenseCategories"][0]
+        category_id = expense_category["id"]
+
+        expense_category_labels_response = await get_expense_category_labels(extend, category_id=category_id)
+        assert "expenseLabels" in expense_category_labels_response, "No expense category labels found"
+        expense_label = expense_category_labels_response["expenseLabels"][0]
+
+        # Update the transaction with an expense category and one of its labels
+        data_with_expense_category = {
+            "expenseDetails": [
+                {
+                    "categoryId": expense_category["id"],
+                    "labelId": expense_label["id"]
+                }
+            ]
+        }
+        response_with_expense_category = await update_transaction_expense_data(
+            extend=extend,
+            transaction_id=transaction_id,
+            data=data_with_expense_category
+        )
+        assert isinstance(response_with_expense_category, dict), "Response should be a dictionary"
+        assert response_with_expense_category["id"] == transaction_id, "Transaction ID should match the input"
+        assert len(response_with_expense_category[
+                       "expenseCategories"]) == 1, "Transaction should have only one expense category coding"
+        coded_expense_category = response_with_expense_category["expenseCategories"][0]
+        assert coded_expense_category["categoryId"] == expense_category[
+            "id"], "Expense categories should match the input"
+        assert coded_expense_category["labelId"] == expense_label["id"], "Expense categories should match the input"
 
 
 @pytest.mark.integration

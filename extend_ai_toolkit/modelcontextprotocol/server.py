@@ -67,6 +67,12 @@ class ExtendMCPServer(FastMCP):
                     fn = functions.update_expense_category
                 case ExtendAPITools.UPDATE_EXPENSE_CATEGORY_LABEL.value:
                     fn = functions.update_expense_category_label
+                case ExtendAPITools.PROPOSE_EXPENSE_CATEGORY_LABEL.value:
+                    fn = functions.propose_transaction_expense_data
+                case ExtendAPITools.CONFIRM_EXPENSE_CATEGORY_LABEL.value:
+                    fn = functions.confirm_transaction_expense_data
+                case ExtendAPITools.UPDATE_TRANSACTION_EXPENSE_DATA.value:
+                    fn = functions.update_transaction_expense_data
                 case _:
                     raise ValueError(f"Invalid tool {tool}")
 
