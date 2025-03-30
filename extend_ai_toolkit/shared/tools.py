@@ -20,7 +20,8 @@ from .prompts import (
     create_expense_category_prompt,
     create_expense_category_label_prompt,
     update_expense_category_prompt,
-    update_expense_category_label_prompt, get_credit_card_detail_prompt,
+    get_credit_card_detail_prompt,
+    update_transaction_expense_data_prompt,
 )
 from .schemas import (
     GetVirtualCards,
@@ -38,7 +39,7 @@ from .schemas import (
     CreateExpenseCategory,
     CreateExpenseCategoryLabel,
     UpdateExpenseCategory,
-    UpdateExpenseCategoryLabel, GetCreditCardDetail,
+    GetCreditCardDetail, UpdateTransactionExpenseData,
 )
 
 
@@ -188,6 +189,21 @@ tools: List[Tool] = [
         ],
     ),
     Tool(
+        method=ExtendAPITools.UPDATE_TRANSACTION_EXPENSE_DATA,
+        name="update_transaction_expense_data",
+        description=update_transaction_expense_data_prompt,
+        args_schema=UpdateTransactionExpenseData,
+        required_scope=[
+            Scope(
+                type=Product.TRANSACTIONS,
+                actions={
+                    "read": True,
+                    "update": True,
+                }
+            )
+        ],
+    ),
+    Tool(
         method=ExtendAPITools.GET_EXPENSE_CATEGORIES,
         name="get_expense_categories",
         description=get_expense_categories_prompt,
@@ -259,16 +275,36 @@ tools: List[Tool] = [
             )
         ],
     ),
-    Tool(
-        method=ExtendAPITools.UPDATE_EXPENSE_CATEGORY_LABEL,
-        name="update_expense_category_label",
-        description=update_expense_category_label_prompt,
-        args_schema=UpdateExpenseCategoryLabel,
-        required_scope=[
-            Scope(
-                type=Product.EXPENSE_CATEGORIES,
-                actions={"read": True, "update": True}
-            )
-        ],
-    ),
+    # Tool(
+    #     method=ExtendAPITools.PROPOSE_EXPENSE_CATEGORY_LABEL,
+    #     name="propose_transaction_expense_data",
+    #     description=propose_transaction_expense_data_prompt,
+    #     args_schema=ProposeTransactionExpenseData,
+    #     required_scope=[
+    #         Scope(
+    #             type=Product.TRANSACTIONS,
+    #             actions={"read": True}
+    #         ),
+    #         Scope(
+    #             type=Product.EXPENSE_CATEGORIES,
+    #             actions={"read": True}
+    #         )
+    #     ],
+    # ),
+    # Tool(
+    #     method=ExtendAPITools.CONFIRM_EXPENSE_CATEGORY_LABEL,
+    #     name="confirm_transaction_expense_data",
+    #     description=confirm_transaction_expense_data_prompt,
+    #     args_schema=ConfirmTransactionExpenseData,
+    #     required_scope=[
+    #         Scope(
+    #             type=Product.TRANSACTIONS,
+    #             actions={"read": True, "update": True}
+    #         ),
+    #         Scope(
+    #             type=Product.EXPENSE_CATEGORIES,
+    #             actions={"read": True}
+    #         )
+    #     ],
+    # )
 ]

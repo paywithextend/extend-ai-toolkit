@@ -1,10 +1,14 @@
 import logging
-from typing import Optional, Dict
+import uuid
+from datetime import datetime, timedelta
+from typing import Dict, Optional
 
 from extend import ExtendClient
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
+pending_selections = {}
 
 
 # =========================
@@ -440,3 +444,136 @@ async def update_expense_category_label(
     except Exception as e:
         logger.error("Error updating expense category label: %s", e)
         raise Exception("Error updating expense category label: %s", e)
+
+
+async def propose_transaction_expense_data(
+        extend: ExtendClient,
+        transaction_id: str,
+        data: Dict
+) -> Dict:
+    """
+    Propose expense data changes for a transaction without applying them.
+
+    Args:
+        extend: The Extend client instance
+        transaction_id: The unique identifier of the transaction
+        data: A dictionary representing the expense data to update
+
+    Returns:
+        Dict: A confirmation request with token and expiration
+    """
+    # Fetch transaction to ensure it exists
+    transaction = await extend.transactions.get_transaction(transaction_id)
+
+    # Generate a unique confirmation token
+    confirmation_token = str(uuid.uuid4())
+
+    # Set expiration time (10 minutes from now)
+    expiration_time = datetime.now() + timedelta(minutes=10)
+
+    # Store the pending selection with its metadata
+    pending_selections[confirmation_token] = {
+        "transaction_id": transaction_id,
+        "data": data,
+        "created_at": datetime.now().isoformat(),
+        "expires_at": expiration_time.isoformat(),
+        "status": "pending"
+    }
+
+    # Return the confirmation request
+    return {
+        "status": "pending_confirmation",
+        "transaction_id": transaction_id,
+        "confirmation_token": confirmation_token,
+        "expires_at": expiration_time.isoformat(),
+        "proposed_categories": [
+            {"categoryId": category.get("categoryId", "Unknown"),
+             "labelId": category.get("labelId", "None")}
+            for category in data.get("expenseDetails", [])
+        ]
+    }
+
+
+async def confirm_transaction_expense_data(
+        extend: ExtendClient,
+        confirmation_token: str
+) -> Dict:
+    """
+    Confirm and apply previously proposed expense data changes.
+
+    Args:
+        extend: The Extend client instance
+        confirmation_token: The unique token from the proposal step
+
+    Returns:
+        Dict: The updated transaction details
+    """
+    # Check if token exists
+    if confirmation_token not in pending_selections:
+        raise Exception("Invalid confirmation token")
+
+    # Get the pending selection
+    selection = pending_selections[confirmation_token]
+
+    # Check if expired
+    if datetime.now() > datetime.fromisoformat(selection["expires_at"]):
+        # Clean up expired token
+        del pending_selections[confirmation_token]
+        raise Exception("Confirmation token has expired")
+
+    # Apply the expense data update
+    response = await extend.transactions.update_transaction_expense_data(
+        selection["transaction_id"],
+        selection["data"]
+    )
+
+    # Mark as confirmed and clean up
+    selection["status"] = "confirmed"
+    selection["confirmed_at"] = datetime.now().isoformat()
+
+    # In a real implementation, you might want to keep the record for auditing
+    # but for simplicity, we'll delete it here
+    del pending_selections[confirmation_token]
+
+    return response
+
+
+async def update_transaction_expense_data(
+        extend: ExtendClient,
+        transaction_id: str,
+        user_confirmed_data_values: bool,
+        data: Dict
+) -> Dict:
+    """
+    Internal function to update the expense data for a specific transaction.
+    This should not be exposed directly to external callers.
+
+    Args:
+        extend: The Extend client instance
+        transaction_id: The unique identifier of the transaction
+        user_confirmed_data_values: Only true if the user has confirmed the specific values in the data argument
+        data: A dictionary representing the expense data to update
+
+    Returns:
+        Dict: A dictionary containing the updated transaction details
+    """
+    try:
+        if not user_confirmed_data_values:
+            raise Exception(f"User has not confirmed the expense category or label values")
+        response = await extend.transactions.update_transaction_expense_data(transaction_id, data)
+        return response
+    except Exception as e:
+        raise Exception(f"Error updating transaction expense data: {str(e)}")
+
+
+# Optional: Cleanup function to remove expired selections
+async def cleanup_pending_selections():
+    """Remove all expired selection tokens"""
+    now = datetime.now()
+    expired_tokens = [
+        token for token, selection in pending_selections.items()
+        if now > datetime.fromisoformat(selection["expires_at"])
+    ]
+
+    for token in expired_tokens:
+        del pending_selections[token]

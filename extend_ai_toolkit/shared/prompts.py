@@ -87,6 +87,51 @@ It takes one argument:
 - transaction_id (str): The ID of the transaction card.
 """
 
+propose_transaction_expense_data_prompt = """
+IMPORTANT: This tool DOES NOT update the expense data yet. It only proposes changes that will need confirmation.
+This tool will propose expense data changes for a transaction without applying them.
+It takes the following arguments:
+- transaction_id (str): The unique identifier of the transaction.
+- data: A dictionary representing the expense data to propose. The shape of the data dictionary is as follows:
+  {      
+      "expenseDetails": [{"categoryId": str, "labelId": str}],      
+  }
+The response is a JSON object containing the proposal details including a confirmation token that must be used to complete the update.
+After calling this tool, you MUST present the confirmation details to the user and ask them to explicitly confirm.
+"""
+
+confirm_transaction_expense_data_prompt = """
+IMPORTANT: This tool finalizes expense data changes that were previously proposed.
+This tool will confirm and apply expense data changes that were previously proposed.
+It takes the following argument:
+- confirmation_token (str): The unique token from the proposal step that was shared with the user.
+
+The confirmation token must come directly from the user's response confirming they wish to apply the changes.
+DO NOT attempt to use this tool unless the user has explicitly provided the confirmation token in their message.
+The response is a JSON object containing the updated transaction details.
+"""
+
+update_transaction_expense_data_prompt = """
+IMPORTANT: NEVER USE THIS TOOL WITHOUT ASKING THE USER FOR THE CATEGORY AND LABEL IF THEY HAVE NOT PROVIDED THEM.
+IMPORTANT: IF THE USER DOES NOT SPECIFY WHICH CATEGORY AND LABEL TO USE, YOU ARE REQUIRED TO ASK THEM WHICH THEY WOULD LIKE TO USE.
+IMPORTANT: TRANSACTIONS OF ANY STATUS CAN BE UPDATE
+
+Step 1: Present user with the available categories and labels
+Step 2: Ask you which ones you'd prefer to use
+Step 3: Only proceed with the update after receiving your explicit confirmation
+
+This tool will update the expense data for a specific transaction in Extend.
+Transactions with any status can have their expense data updated.  
+It takes the following arguments:
+- transaction_id (str): The unique identifier of the transaction.
+- user_confirmed_data_values (bool): Indicates whether or not the user has confirmed the specific values used in the data argument.
+- data: A dictionary representing the expense data to update. The shape of the data dictionary is as follows:
+  {      
+      "expenseDetails": [{"categoryId": str, "labelId": str}],      
+  }
+The response is a JSON object containing the updated transaction details.
+"""
+
 # Expense Data Functions Prompts
 
 get_expense_categories_prompt = """
