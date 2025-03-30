@@ -15,7 +15,7 @@ class AnthropicChatClient(ChatClient):
             model_name="claude-3-7-sonnet-20250219",
             system_prompt="You are a helpful assistant."):
         self.model_name = model_name
-        self.client = AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+        self.client = AsyncAnthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
         self.system_prompt = system_prompt
 
     async def generate_completion(

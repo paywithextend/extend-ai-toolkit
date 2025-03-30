@@ -32,10 +32,10 @@ def event_loop():
 # Skip all tests if environment variables are not set
 pytestmark = pytest.mark.skipif(
     not all([
-        os.getenv("EXTEND_API_KEY"),
-        os.getenv("EXTEND_API_SECRET"),
-        os.getenv("EXTEND_TEST_RECIPIENT"),
-        os.getenv("EXTEND_TEST_CARDHOLDER")
+        os.environ.get("EXTEND_API_KEY"),
+        os.environ.get("EXTEND_API_SECRET"),
+        os.environ.get("EXTEND_TEST_RECIPIENT"),
+        os.environ.get("EXTEND_TEST_CARDHOLDER")
     ]),
     reason="Integration tests require EXTEND_API_KEY, EXTEND_API_SECRET, EXTEND_TEST_RECIPIENT, and EXTEND_TEST_CARDHOLDER environment variables"
 )
@@ -44,21 +44,21 @@ pytestmark = pytest.mark.skipif(
 @pytest.fixture(scope="session")
 def extend():
     """Create a real API client for integration testing"""
-    api_key = os.getenv("EXTEND_API_KEY")
-    api_secret = os.getenv("EXTEND_API_SECRET")
+    api_key = os.environ.get("EXTEND_API_KEY")
+    api_secret = os.environ.get("EXTEND_API_SECRET")
     return ExtendClient(api_key, api_secret)
 
 
 @pytest.fixture(scope="session")
 def test_recipient():
     """Get the test recipient email"""
-    return os.getenv("EXTEND_TEST_RECIPIENT")
+    return os.environ.get("EXTEND_TEST_RECIPIENT")
 
 
 @pytest.fixture(scope="session")
 def test_cardholder():
     """Get the test cardholder email"""
-    return os.getenv("EXTEND_TEST_CARDHOLDER")
+    return os.environ.get("EXTEND_TEST_CARDHOLDER")
 
 
 _cached_test_credit_card = None
@@ -474,5 +474,5 @@ class TestExpenseData:
 
 def test_environment_variables():
     """Test that required environment variables are set"""
-    assert os.getenv("EXTEND_API_KEY"), "EXTEND_API_KEY environment variable is required"
-    assert os.getenv("EXTEND_API_SECRET"), "EXTEND_API_SECRET environment variable is required"
+    assert os.environ.get("EXTEND_API_KEY"), "EXTEND_API_KEY environment variable is required"
+    assert os.environ.get("EXTEND_API_SECRET"), "EXTEND_API_SECRET environment variable is required"
