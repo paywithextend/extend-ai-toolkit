@@ -1,4 +1,5 @@
-from typing import Optional, Dict, List
+from typing import Dict
+from typing import Optional, List
 
 from pydantic import BaseModel, Field
 
@@ -443,4 +444,18 @@ class UpdateExpenseCategoryLabel(BaseModel):
     active: Optional[bool] = Field(
         None,
         description="The updated active status of the label.",
+    )
+
+
+class CreateReceiptAttachmentSchema(BaseModel):
+    """Schema for the `create_receipt_attachment` operation."""
+
+    transaction_id: str = Field(
+        ...,
+        description="The unique identifier of the transaction to attach the receipt to."
+    )
+
+    file: str = Field(
+        ...,
+        description="File path for the receipt attachment to be uploaded via multipart form data.",
     )

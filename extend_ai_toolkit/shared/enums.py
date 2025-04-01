@@ -22,6 +22,7 @@ class ExtendAPITools(Enum):
     UPDATE_EXPENSE_CATEGORY_LABEL = "update_expense_category_label"
     PROPOSE_EXPENSE_CATEGORY_LABEL = "propose_expense_category_label"
     CONFIRM_EXPENSE_CATEGORY_LABEL = "confirm_expense_category_label"
+    CREATE_RECEIPT_ATTACHMENT = "create_receipt_attachment"
 
 
 class Action(Enum):
@@ -40,3 +41,4 @@ class Product(Enum):
     VIRTUAL_CARDS = "virtual_cards"
     TRANSACTIONS = "transactions"
     EXPENSE_CATEGORIES = "expense_categories"
+    RECEIPT_ATTACHMENTS = "receipt_attachments"

@@ -114,14 +114,16 @@ The response is a JSON object containing the updated transaction details.
 update_transaction_expense_data_prompt = """
 IMPORTANT: NEVER USE THIS TOOL WITHOUT ASKING THE USER FOR THE CATEGORY AND LABEL IF THEY HAVE NOT PROVIDED THEM.
 IMPORTANT: IF THE USER DOES NOT SPECIFY WHICH CATEGORY AND LABEL TO USE, YOU ARE REQUIRED TO ASK THEM WHICH THEY WOULD LIKE TO USE.
-IMPORTANT: TRANSACTIONS OF ANY STATUS CAN BE UPDATE
+IMPORTANT: DO NOT FETCH THE EXPENSE CATEGORY LABELS UNTIL THE USER HAS SELECTED AN EXPENSE CATEGORY
+IMPORTANT: ONLY USE TOOLS THAT ARE ABSOLUTELY NECESSARY TO COMPLETE THE TASK YOU ARE WORKING ON
+IMPORTANT: TRANSACTIONS OF ANY STATUS CAN BE UPDATED
 
-Step 1: Present user with the available categories and labels
-Step 2: Ask you which ones you'd prefer to use
-Step 3: Only proceed with the update after receiving your explicit confirmation
+Step 1: If the user has not specified an expense category and label, present user with all of the the available categories and ask them to select one
+Step 2: Once the user has confirmed the expense category, then present them with the list of labels for that expense category
+Step 3: Only proceed with the update after receiving the users explicit confirmation 
 
 This tool will update the expense data for a specific transaction in Extend.
-Transactions with any status can have their expense data updated.  
+
 It takes the following arguments:
 - transaction_id (str): The unique identifier of the transaction.
 - user_confirmed_data_values (bool): Indicates whether or not the user has confirmed the specific values used in the data argument.
@@ -131,8 +133,6 @@ It takes the following arguments:
   }
 The response is a JSON object containing the updated transaction details.
 """
-
-# Expense Data Functions Prompts
 
 get_expense_categories_prompt = """
 This tool will get a list of expense categories in Extend.
@@ -207,4 +207,16 @@ Optional arguments include:
 - name (Optional[str]): The new name for the label.
 - active (Optional[bool]): The updated active status of the label.
 The response is a JSON object with the updated expense category label details.
+"""
+
+create_receipt_attachment_prompt = """
+This tool will create a receipt attachment in Extend by uploading a file via multipart form data.
+It takes two arguments:
+- transaction_id (str): The unique identifier of the transaction to attach the receipt to.
+- file (IO): A file-like object opened in binary mode representing the receipt image.
+The response is a JSON object containing the receipt attachment details, including:
+- id: The unique identifier of the attachment.
+- contentType: MIME type (e.g., "image/png").
+- urls: A dictionary with URLs for the original image, main image, and thumbnail.
+- createdAt and updatedAt timestamps.
 """

@@ -87,5 +87,8 @@ class ExtendAPI:
             case ExtendAPITools.CONFIRM_EXPENSE_CATEGORY_LABEL.value:
                 output = await confirm_transaction_expense_data(self.extend, *args, **kwargs)
                 return json.dumps(output)
+            case ExtendAPITools.CREATE_RECEIPT_ATTACHMENT.value:
+                output = await create_receipt_attachment(self.extend, *args, **kwargs)
+                return json.dumps(output)
             case _:
                 raise ValueError(f"Invalid tool {tool}")
