@@ -41,10 +41,10 @@ def event_loop():
 # Skip all tests if environment variables are not set
 pytestmark = pytest.mark.skipif(
     not all([
-        os.getenv("EXTEND_API_KEY"),
-        os.getenv("EXTEND_API_SECRET"),
-        os.getenv("EXTEND_TEST_RECIPIENT"),
-        os.getenv("EXTEND_TEST_CARDHOLDER")
+        os.environ.get("EXTEND_API_KEY"),
+        os.environ.get("EXTEND_API_SECRET"),
+        os.environ.get("EXTEND_TEST_RECIPIENT"),
+        os.environ.get("EXTEND_TEST_CARDHOLDER")
     ]),
     reason="Integration tests require EXTEND_API_KEY, EXTEND_API_SECRET, EXTEND_TEST_RECIPIENT, and EXTEND_TEST_CARDHOLDER environment variables"
 )
@@ -53,21 +53,21 @@ pytestmark = pytest.mark.skipif(
 @pytest.fixture(scope="session")
 def extend():
     """Create a real API client for integration testing"""
-    api_key = os.getenv("EXTEND_API_KEY")
-    api_secret = os.getenv("EXTEND_API_SECRET")
+    api_key = os.environ.get("EXTEND_API_KEY")
+    api_secret = os.environ.get("EXTEND_API_SECRET")
     return ExtendClient(api_key, api_secret)
 
 
 @pytest.fixture(scope="session")
 def test_recipient():
     """Get the test recipient email"""
-    return os.getenv("EXTEND_TEST_RECIPIENT")
+    return os.environ.get("EXTEND_TEST_RECIPIENT")
 
 
 @pytest.fixture(scope="session")
 def test_cardholder():
     """Get the test cardholder email"""
-    return os.getenv("EXTEND_TEST_CARDHOLDER")
+    return os.environ.get("EXTEND_TEST_CARDHOLDER")
 
 
 _cached_test_credit_card = None
@@ -238,7 +238,8 @@ class TestTransactions:
         response_no_expense_categories = await update_transaction_expense_data(
             extend,
             transaction_id,
-            data_no_expense_categories
+            user_confirmed_data_values=True,
+            data=data_no_expense_categories
         )
         assert isinstance(response_no_expense_categories, dict), "Response should be a dictionary"
         assert response_no_expense_categories["id"] == transaction_id, "Transaction ID should match the input"
@@ -251,8 +252,20 @@ class TestTransactions:
         category_id = expense_category["id"]
 
         expense_category_labels_response = await get_expense_category_labels(extend, category_id=category_id)
-        assert "expenseLabels" in expense_category_labels_response, "No expense category labels found"
-        expense_label = expense_category_labels_response["expenseLabels"][0]
+        if not expense_category_labels_response.get("expenseLabels"):
+            # Create a new label if none exist
+            label_name = f"Test Label {str(uuid.uuid4())[:8]}"
+            label_code = f"LBL{str(uuid.uuid4())[:8]}"
+            expense_label_response = await create_expense_category_label(
+                extend=extend,
+                category_id=category_id,
+                name=label_name,
+                code=label_code,
+                active=True
+            )
+            expense_label = expense_label_response
+        else:
+            expense_label = expense_category_labels_response["expenseLabels"][0]
 
         # Update the transaction with an expense category and one of its labels
         data_with_expense_category = {
@@ -266,6 +279,7 @@ class TestTransactions:
         response_with_expense_category = await update_transaction_expense_data(
             extend=extend,
             transaction_id=transaction_id,
+            user_confirmed_data_values=True,
             data=data_with_expense_category
         )
         assert isinstance(response_with_expense_category, dict), "Response should be a dictionary"
@@ -527,5 +541,5 @@ class TestReceiptAttachments:
 
 def test_environment_variables():
     """Test that required environment variables are set"""
-    assert os.getenv("EXTEND_API_KEY"), "EXTEND_API_KEY environment variable is required"
-    assert os.getenv("EXTEND_API_SECRET"), "EXTEND_API_SECRET environment variable is required"
+    assert os.environ.get("EXTEND_API_KEY"), "EXTEND_API_KEY environment variable is required"
+    assert os.environ.get("EXTEND_API_SECRET"), "EXTEND_API_SECRET environment variable is required"
