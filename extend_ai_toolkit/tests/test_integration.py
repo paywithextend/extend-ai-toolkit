@@ -229,7 +229,8 @@ class TestTransactions:
         response_no_expense_categories = await update_transaction_expense_data(
             extend,
             transaction_id,
-            data_no_expense_categories
+            user_confirmed_data_values=True,
+            data=data_no_expense_categories
         )
         assert isinstance(response_no_expense_categories, dict), "Response should be a dictionary"
         assert response_no_expense_categories["id"] == transaction_id, "Transaction ID should match the input"
@@ -242,8 +243,20 @@ class TestTransactions:
         category_id = expense_category["id"]
 
         expense_category_labels_response = await get_expense_category_labels(extend, category_id=category_id)
-        assert "expenseLabels" in expense_category_labels_response, "No expense category labels found"
-        expense_label = expense_category_labels_response["expenseLabels"][0]
+        if not expense_category_labels_response.get("expenseLabels"):
+            # Create a new label if none exist
+            label_name = f"Test Label {str(uuid.uuid4())[:8]}"
+            label_code = f"LBL{str(uuid.uuid4())[:8]}"
+            expense_label_response = await create_expense_category_label(
+                extend=extend,
+                category_id=category_id,
+                name=label_name,
+                code=label_code,
+                active=True
+            )
+            expense_label = expense_label_response
+        else:
+            expense_label = expense_category_labels_response["expenseLabels"][0]
 
         # Update the transaction with an expense category and one of its labels
         data_with_expense_category = {
@@ -257,6 +270,7 @@ class TestTransactions:
         response_with_expense_category = await update_transaction_expense_data(
             extend=extend,
             transaction_id=transaction_id,
+            user_confirmed_data_values=True,
             data=data_with_expense_category
         )
         assert isinstance(response_with_expense_category, dict), "Response should be a dictionary"
