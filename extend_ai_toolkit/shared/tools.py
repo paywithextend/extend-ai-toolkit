@@ -22,6 +22,7 @@ from .prompts import (
     update_expense_category_prompt,
     get_credit_card_detail_prompt,
     update_transaction_expense_data_prompt,
+    create_receipt_attachment_prompt,
 )
 from .schemas import (
     GetVirtualCards,
@@ -271,6 +272,22 @@ tools: List[Tool] = [
         required_scope=[
             Scope(
                 type=Product.EXPENSE_CATEGORIES,
+                actions={"read": True, "update": True}
+            )
+        ],
+    ),
+    Tool(
+        method=ExtendAPITools.CREATE_RECEIPT_ATTACHMENT,
+        name="create_receipt_attachment",
+        description=create_receipt_attachment_prompt,
+        args_schema=UpdateExpenseCategory,
+        required_scope=[
+            Scope(
+                type=Product.RECEIPT_ATTACHMENTS,
+                actions={"read": True, "create": True}
+            ),
+            Scope(
+                type=Product.TRANSACTIONS,
                 actions={"read": True, "update": True}
             )
         ],

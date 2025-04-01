@@ -1,4 +1,6 @@
+import io
 import logging
+import os
 import uuid
 from datetime import datetime, timedelta
 from typing import Dict, Optional
@@ -564,6 +566,75 @@ async def update_transaction_expense_data(
         return response
     except Exception as e:
         raise Exception(f"Error updating transaction expense data: {str(e)}")
+
+
+# =========================
+# Receipt Attachment Functions
+# =========================
+
+async def create_receipt_attachment(
+        extend: ExtendClient,
+        transaction_id: str,
+        file_path: str,
+) -> Dict:
+    """
+    Create a receipt attachment by uploading a file via multipart form data.
+
+    Args:
+        extend: The Extend client instance
+        transaction_id (str): The unique identifier of the transaction to attach the receipt to.
+        file_path (str): A file path for the receipt image.
+
+    Returns:
+        Dict: A dictionary representing the receipt attachment details, including:
+                - id: Unique identifier of the receipt attachment.
+                - transactionId: The associated transaction ID.
+                - contentType: The MIME type of the uploaded file.
+                - urls: A dictionary with URLs for the original image, main image, and thumbnail.
+                - createdAt: Timestamp when the receipt attachment was created.
+                - uploadType: A string describing the type of upload (e.g., "TRANSACTION", "VIRTUAL_CARD").
+    """
+    try:
+        with open(file_path, 'rb') as f:
+            file_content = f.read()
+            file_obj = io.BytesIO(file_content)
+
+            # Get the filename and determine the MIME type
+            filename = os.path.basename(file_path)
+            mime_type = None
+
+            # Set the MIME type based on file extension
+            if filename.lower().endswith('.png'):
+                mime_type = 'image/png'
+            elif filename.lower().endswith('.jpg') or filename.lower().endswith('.jpeg'):
+                mime_type = 'image/jpeg'
+            elif filename.lower().endswith('.gif'):
+                mime_type = 'image/gif'
+            elif filename.lower().endswith('.bmp'):
+                mime_type = 'image/bmp'
+            elif filename.lower().endswith('.tif') or filename.lower().endswith('.tiff'):
+                mime_type = 'image/tiff'
+            elif filename.lower().endswith('.heic'):
+                mime_type = 'image/heic'
+            elif filename.lower().endswith('.pdf'):
+                mime_type = 'application/pdf'
+            else:
+                raise ValueError(f"Unsupported file type: {filename}")
+
+            file_obj = io.BytesIO(file_content)
+            file_obj.name = filename
+            file_obj.content_type = mime_type
+
+            response = await extend.receipt_attachments.create_receipt_attachment(
+                transaction_id=transaction_id,
+                file=file_obj
+            )
+            return response
+
+
+    except Exception as e:
+        logger.error("Error creating receipt attachment: %s", e)
+        raise Exception("Error creating receipt attachment: %s", e)
 
 
 # Optional: Cleanup function to remove expired selections

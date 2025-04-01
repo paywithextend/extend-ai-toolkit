@@ -1,5 +1,6 @@
 import asyncio
 import os
+import tempfile
 import uuid
 from datetime import datetime, timedelta
 
@@ -14,9 +15,17 @@ from extend_ai_toolkit.shared.functions import (
     create_virtual_card,
     update_virtual_card,
     cancel_virtual_card,
-    close_virtual_card, create_expense_category, create_expense_category_label, get_expense_category_labels,
-    update_expense_category_label, get_expense_categories, get_expense_category, update_expense_category,
-    get_transactions, update_transaction_expense_data
+    close_virtual_card,
+    create_expense_category,
+    create_expense_category_label,
+    get_expense_category_labels,
+    update_expense_category_label,
+    get_expense_categories,
+    get_expense_category,
+    update_expense_category,
+    get_transactions,
+    update_transaction_expense_data,
+    create_receipt_attachment
 )
 
 load_dotenv()
@@ -470,6 +479,50 @@ class TestExpenseData:
         updated_label = update_label_response
         assert updated_label, "Expense category label update failed"
         assert updated_label["name"] == new_label_name
+
+
+@pytest.mark.integration
+class TestReceiptAttachments:
+    """Integration tests for receipt attachment operations"""
+
+    @pytest.mark.asyncio
+    async def test_create_receipt_attachment(self, extend):
+        """
+        Test creating a receipt attachment for a transaction by uploading a file.
+        """
+
+        # Retrieve a transaction to attach the receipt to
+        transactions_response = await get_transactions(extend, page=0, per_page=1)
+        if not transactions_response.get("transactions"):
+            pytest.skip("No transactions available to attach receipt to")
+        transaction_id = transactions_response["transactions"][0]["id"]
+
+        # Create a temporary PNG file with minimal valid header bytes
+        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
+            # Write minimal PNG header bytes (this is not a complete image,
+            # but may be sufficient for testing file upload endpoints)
+            tmp.write(b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01'
+                      b'\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89')
+            tmp.flush()
+            tmp_name = tmp.name
+
+        try:
+            response = await create_receipt_attachment(
+                extend=extend,
+                transaction_id=transaction_id,
+                file_path=tmp_name
+            )
+            # Verify that the response contains expected receipt attachment fields.
+            # Adjust these assertions based on your API response structure.
+            assert response is not None, "Response should not be None"
+
+            # Check for common fields in a successful response
+            for field in ["id", "transactionId", "contentType", "urls", "createdAt", "uploadType"]:
+                assert field in response, f"Missing expected field: {field}"
+
+        finally:
+            # Clean up the temporary file
+            os.remove(tmp_name)
 
 
 def test_environment_variables():

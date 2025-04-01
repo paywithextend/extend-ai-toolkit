@@ -17,6 +17,8 @@ VALID_SCOPES = [
     'expense_categories.read',
     'expense_categories.create',
     'expense_categories.update',
+    'receipt_attachments.read',
+    'receipt_attachments.create',
 ]
 
 

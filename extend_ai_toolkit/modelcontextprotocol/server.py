@@ -73,6 +73,8 @@ class ExtendMCPServer(FastMCP):
                     fn = functions.confirm_transaction_expense_data
                 case ExtendAPITools.UPDATE_TRANSACTION_EXPENSE_DATA.value:
                     fn = functions.update_transaction_expense_data
+                case ExtendAPITools.CREATE_RECEIPT_ATTACHMENT.value:
+                    fn = functions.create_receipt_attachment
                 case _:
                     raise ValueError(f"Invalid tool {tool}")
 
