@@ -1,20 +1,15 @@
-# AI Toolkit for Extend
+# Extend AI Toolkit 
 
 ## Overview
 
-The Extend AI Toolkit provides a python based implementation of tools to integrate with Extend APIs for both the [OpenAI](https://github.com/openai/openai-agents-python) and [LangChain](https://github.com/langchain-ai/langchain) agent frameworks, as well [Model Context Protocol (MCP)](https://modelcontextprotocol.com/). It enables users to delegate certain actions in the spend management flow to AI agents or MCP-compatible clients like Claude desktop.
+The [Extend](https://www.paywithextend.com) AI Toolkit provides a python based implementation of tools to integrate with Extend APIs for multiple AI frameworks including Anthropic's [Model Context Protocol (MCP)](https://modelcontextprotocol.com/), [OpenAI](https://github.com/openai/openai-agents-python), [LangChain](https://github.com/langchain-ai/langchain), and [CrewAI](https://github.com/joaomdmoura/crewAI). It enables users to delegate certain actions in the spend management flow to AI agents or MCP-compatible clients like Claude desktop.
 
-These tools are designed for existing Extend users with API keys. If you are not signed up with Extend and are interested in a cutting edge spend management tool, you can check us out at [paywithextend.com](https://www.paywithextend.com/).
+These tools are designed for existing Extend users with API keys. If you are not signed up with Extend and would like to learn more about our modern, easy-to-use virtual card and spend management platform for small- and medium-sized businesses, you can check us out at [paywithextend.com](https://www.paywithextend.com/).
 
 ## Features
 
-- **Tools**:
-- - `get_virtual_cards`: Fetch virtual cards with optional filters for status, recipient (ID), and search_term
-  - `get_transaction_detail`: Fetch detailed information about a specific transaction by its ID.
-  - `get_transactions`: Fetch transactions with optional filters for start_date, end_date, virtual_card_id, min_amount_cents, and max_amount_cents
-  - `get_transaction_detail`: Fetch detailed information about a specific transaction by its ID.- 
-- **Asynchronous API Calls**: Uses `httpx` for efficient, non-blocking requests to the Extend API.
-- **Environment Variable Support**: Securely manage your API key and API secret via a `.env` file.
+- **Multiple AI Framework Support**: Works with Anthropic Model Context Protocol, OpenAI Agents, LangChain LangGraph & ReAct, and CrewAI frameworks 
+- **Comprehensive Tool Set**: Supports all of Extend's major API functionalities, spanning our Credit Card, Virtual Card, Transaction & Expense Management endpoints
 
 ## Installation
 
@@ -27,25 +22,58 @@ pip install extend_ai_toolkit@git+https://github.com/paywithextend/extend-ai-too
 
 ### Requirements
 
-- **Python**: Version 3.10 or higher.
-- **Extend API Key**: Sign up at [paywithextend.com](https://paywithextend.com) to obtain an API key.
+- **Python**: Version 3.10 or higher
+- **Extend API Key**: Sign up at [paywithextend.com](https://paywithextend.com) to obtain an API key
+- **Framework-specific Requirements**:
+  - LangChain: `langchain` and `langchain-openai` packages
+  - OpenAI: `openai` package
+  - CrewAI: `crewai` package
+  - Anthropic: `anthropic` package (for Claude)
 
-## Usage
+## Configuration
 
-The library needs to be configured with your Extend api key, api secret, and organization id, either through environment variables or command line arguments
+The library needs to be configured with your Extend API key and API, either through environment variables or command line arguments:
 
 ```
---api-key=your_api_key_here --api-secret=your_api_secret_here --org-id=your_org_id_here
+--api-key=your_api_key_here --api-secret=your_api_secret_here 
 ```
-or
+
+or via environment variables:
 ```
 EXTEND_API_KEY=your_api_key_here
 EXTEND_API_SECRET=your_api_secret_here
-ORGANIZATION_ID=your_org_id_here
 ```
 
-### Model Context Protocol 
-The toolkit provides a variety of resources in the modelcontextprotocol package (`extend_ai_toolkit.modelcontextprotocol`) to help you build an MCP server. 
+## Available Tools
+
+The toolkit provides a comprehensive set of tools organized by functionality:
+
+### Virtual Cards
+- `get_virtual_cards`: Fetch virtual cards with optional filters
+- `get_virtual_card_detail`: Get detailed information about a specific virtual card
+
+### Credit Cards
+- `get_credit_cards`: List all credit cards
+- `get_credit_card_detail`: Get detailed information about a specific credit card
+
+### Transactions
+- `get_transactions`: Fetch transactions with various filters
+- `get_transaction_detail`: Get detailed information about a specific transaction
+- `update_transaction_expense_data`: Update expense-related data for a transaction
+
+### Expense Management
+- `get_expense_categories`: List all expense categories
+- `get_expense_category`: Get details of a specific expense category
+- `get_expense_category_labels`: Get labels for an expense category
+- `create_expense_category`: Create a new expense category
+- `create_expense_category_label`: Add a label to an expense category
+- `update_expense_category`: Modify an existing expense category
+
+## Usage Examples
+
+### Model Context Protocol
+
+The toolkit provides resources in the `extend_ai_toolkit.modelcontextprotocol` package to help you build an MCP server.
 
 #### Development
 
@@ -55,115 +83,71 @@ Test Extend MCP server locally using MCP Inspector:
 npx @modelcontextprotocol/inspector python extend_ai_toolkit/modelcontextprotocol/main.py --tools=virtual_cards.read,credit_cards.read
 ```
 
-Make sure to set `EXTEND_API_KEY` and `EXTEND_API_SECRET` in your environment variables.
+#### Claude Desktop Integration
 
-#### Claude Desktop
-
-Add this tool as an MCP server to Claude Desktop by editing the Claude config file.
+Add this tool as an MCP server to Claude Desktop by editing the config file:
 
 On MacOS: `~/Library/Application\ Support/Claude/claude_desktop_config.json`
 On Windows: `%APPDATA%/Claude/claude_desktop_config.json`
 
 ```json
+{
   "extend-mcp": {
     "command": "python",
     "args": [
       "-m",
       "extend_ai_toolkit.modelcontextprotocol.main",
-      "--tools=all" // or a subset, e.g. "virtual_cards.read,credit_cards.read"
+      "--tools=all"
     ],
     "env": {
       "EXTEND_API_KEY": "apik_XXXX",
-      "EXTEND_API_SECRET": "XXXXX",
-      "ORGANIZATION_ID": "org_XXXX"
+      "EXTEND_API_SECRET": "XXXXX"
     }
   }
+}
 ```
 
 #### Direct Execution
 
-For advanced scenarios like custom deployments or running without Claude, you can execute your server directly:
-
+For advanced scenarios, you can execute the server directly:
 
 STDIO Transport:
-```
-python -m extend_ai_toolkit.modelcontextprotocol.main --tools=virtual_cards.read,credit_cards.read --api-key=apik_XXXX --api-secret=XXXX --org-id=org_XXXX
+```bash
+python -m extend_ai_toolkit.modelcontextprotocol.main --tools=virtual_cards.read,credit_cards.read
 ```
 
 SSE Transport:
-```
-python -m extend_ai_toolkit.modelcontextprotocol.main_sse --tools=virtual_cards.read,credit_cards.read --api-key=apik_XXXX --api-secret=XXXX --org-id=org_XXXX
-```
-
-Additionally, You can connect to your SSE server using our custom MCP terminal client
-
-```
-python -m extend_ai_toolkit.modelcontextprotocol.mcp_client 
+```bash
+python -m extend_ai_toolkit.modelcontextprotocol.main_sse --tools=virtual_cards.read,credit_cards.read
 ```
 
-Example of setting up your own MCP server:
-
-```
-import os
-import sys
-
-from extend_ai_toolkit.modelcontextprotocol.server import ExtendMCPServer
-from extend_ai_toolkit.shared import Configuration, Scope, Product, Actions
-
-server = ExtendMCPServer(    
-    api_key=os.environ.get("EXTEND_API_KEY"),
-    api_secret=s.environ.get("EXTEND_API_SECRET"),    
-    configuration=Configuration(
-        scope=[
-            Scope(Product.VIRTUAL_CARDS, actions=Actions(create=True, update=True, read=True)),
-            Scope(Product.CREDIT_CARDS, actions=Actions(read=True)),
-            Scope(Product.TRANSACTIONS, actions=Actions(read=True)),
-        ],
-        org_id=os.environ.get("EXTEND_API_SECRET")
-    )
-)
-
-if __name__ == "__main__":
-    try:
-        server.run(transport='stdio')
-    except Exception as e:
-        sys.stderr.write(f"{str(e)}\n")
+Connect using the MCP terminal client:
+```bash
+python -m extend_ai_toolkit.modelcontextprotocol.mcp_client
 ```
 
 ### OpenAI
 
-The toolkit works with OpenAI and can be passed as a list of tools. For example:
-
-```
+```python
 import os
-
-from agents import Agent
-
+from langchain_openai import ChatOpenAI
 from extend_ai_toolkit.openai.toolkit import ExtendOpenAIToolkit
 from extend_ai_toolkit.shared import Configuration, Scope, Product, Actions
-    
-api_key = os.environ.get("EXTEND_API_KEY")
-api_secret = os.environ.get("EXTEND_API_SECRET")
-org_id = os.environ.get("ORGANIZATION_ID")
 
-llm = ChatOpenAI(
-    model="gpt-4o",
-)
-
+# Initialize the OpenAI toolkit
 extend_openai_toolkit = ExtendOpenAIToolkit(
-    org_id,    
-    api_key,
-    api_secret,
-    Configuration(
-      scope=[
-        Scope(Product.VIRTUAL_CARDS, actions=Actions(create=True, update=True, read=True)),
-        Scope(Product.CREDIT_CARDS, actions=Actions(read=True)),
-        Scope(Product.TRANSACTIONS, actions=Actions(read=True)),
-       ],
-       org_id=org_id
-    )  
+    api_key=os.environ.get("EXTEND_API_KEY"),
+    api_secret=os.environ.get("EXTEND_API_SECRET"),
+    configuration=Configuration(
+        scope=[
+            Scope(Product.VIRTUAL_CARDS, actions=Actions(read=True)),
+            Scope(Product.CREDIT_CARDS, actions=Actions(read=True)),
+            Scope(Product.TRANSACTIONS, actions=Actions(read=True)),
+        ]
+    )
 )
 
+# Create an agent with the tools
 extend_agent = Agent(
     name="Extend Agent",
     instructions="You are an expert at integrating with Extend",
@@ -171,44 +155,95 @@ extend_agent = Agent(
 )
 ```
 
-
 ### LangChain
 
-The toolkit works with LangChain and can be passed as a list of tools. For example:
-
-```
+```python
 import os
-
 from langchain_openai import ChatOpenAI
 from langgraph.prebuilt import create_react_agent
-
 from extend_ai_toolkit.langchain.toolkit import ExtendLangChainToolkit
 from extend_ai_toolkit.shared import Configuration, Scope, Product, Actions
 
-api_key = os.environ.get("EXTEND_API_KEY")
-api_secret = os.environ.get("EXTEND_API_SECRET")
-org_id = os.environ.get("ORGANIZATION_ID")
-
-llm = ChatOpenAI(
-    model="gpt-4o",
-)
-
+# Initialize the LangChain toolkit
 extend_langchain_toolkit = ExtendLangChainToolkit(
-    org_id,    
-    api_key,
-    api_secret,
-    Configuration(
-      scope=[
-        Scope(Product.VIRTUAL_CARDS, actions=Actions(create=True, update=True, read=True)),
-        Scope(Product.CREDIT_CARDS, actions=Actions(read=True)),
-        Scope(Product.TRANSACTIONS, actions=Actions(read=True)),
-       ],
-       org_id=org_id
+    api_key=os.environ.get("EXTEND_API_KEY"),
+    api_secret=os.environ.get("EXTEND_API_SECRET"),
+    configuration=Configuration(
+        scope=[
+            Scope(Product.VIRTUAL_CARDS, actions=Actions(read=True)),
+            Scope(Product.CREDIT_CARDS, actions=Actions(read=True)),
+            Scope(Product.TRANSACTIONS, actions=Actions(read=True)),
+        ]
     )
 )
 
-tools = []
-tools.extend(extend_agent_toolkit.get_tools())
+# Create tools for the agent
+tools = extend_langchain_toolkit.get_tools()
 
-langgraph_agent_executor = create_react_agent(llm, tools)
+# Create the agent executor
+langgraph_agent_executor = create_react_agent(
+    ChatOpenAI(model="gpt-4"),
+    tools
+)
 ```
+
+### CrewAI
+
+```python
+import os
+from extend_ai_toolkit.crewai.toolkit import ExtendCrewAIToolkit
+from extend_ai_toolkit.shared import Configuration, Scope, Product, Actions
+
+# Initialize the CrewAI toolkit
+toolkit = ExtendCrewAIToolkit(
+    api_key=os.environ.get("EXTEND_API_KEY"),
+    api_secret=os.environ.get("EXTEND_API_SECRET"),
+    configuration=Configuration(
+        scope=[
+            Scope(Product.VIRTUAL_CARDS, actions=Actions(read=True)),
+            Scope(Product.CREDIT_CARDS, actions=Actions(read=True)),
+            Scope(Product.TRANSACTIONS, actions=Actions(read=True)),
+        ]
+    )
+)
+
+# Configure the LLM (using Claude)
+toolkit.configure_llm(
+    model="claude-3-opus-20240229",
+    api_key=os.environ.get("ANTHROPIC_API_KEY")
+)
+
+# Create the Extend agent
+extend_agent = toolkit.create_agent(
+    role="Extend Integration Expert",
+    goal="Help users manage virtual cards, view credit cards, and check transactions efficiently",
+    backstory="You are an expert at integrating with Extend, with deep knowledge of virtual cards, credit cards, and transaction management.",
+    verbose=True
+)
+
+# Create a task for handling user queries
+query_task = toolkit.create_task(
+    description="Process and respond to user queries about Extend services",
+    agent=extend_agent,
+    expected_output="A clear and helpful response addressing the user's query",
+    async_execution=True
+)
+
+# Create a crew with the agent and task
+crew = toolkit.create_crew(
+    agents=[extend_agent],
+    tasks=[query_task],
+    verbose=True
+)
+
+# Run the crew
+result = crew.kickoff()
+```
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
