@@ -15,7 +15,6 @@ class ExtendAPI:
 
     def __init__(
             self,
-            org_id: str,
             api_key: str,
             api_secret: str,
     ):

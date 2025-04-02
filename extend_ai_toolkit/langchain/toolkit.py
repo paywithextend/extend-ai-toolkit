@@ -18,12 +18,10 @@ class ExtendLangChainToolkit(AgentToolkit[ExtendTool]):
             api_secret: str,
             configuration: Optional[Configuration]
     ):
-        configuration.org_id = org_id
-
         super().__init__(
             api_key=api_key,
             api_secret=api_secret,
-            configuration=configuration or Configuration.all_tools(org_id)
+            configuration=configuration or Configuration.all_tools()
         )
 
     def tool_for_agent(self, api: ExtendAPI, tool: Tool) -> ExtendTool:

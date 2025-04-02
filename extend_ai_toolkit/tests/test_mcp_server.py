@@ -69,9 +69,6 @@ def mock_configuration():
     # Configure the mock to return our controlled list of tools
     mock_config.allowed_tools.return_value = allowed_tools
 
-    # Add org_id property
-    mock_config.org_id = "test_org_id"
-
     return mock_config
 
 
@@ -105,8 +102,6 @@ def test_init_calls_parent_constructor(mock_fastmcp):
     """Test that parent constructor is called with correct parameters"""
     # Create the server directly since we're testing initialization
     mock_config = Mock(spec=Configuration)
-    # Ensure the org_id attribute exists
-    mock_config.org_id = "test_org_id"
     # Configure allowed_tools to return an empty list (iterable)
     mock_config.allowed_tools.return_value = []
 
@@ -129,7 +124,6 @@ def test_init_creates_extend_api(mock_extend_api, server, mock_configuration):
     """Test that ExtendAPI is initialized with correct credentials"""
     # ExtendAPI should have been created with our credentials during server init
     mock_extend_api.assert_called_once_with(
-        org_id=mock_configuration.org_id,
         api_key="test_api_key",
         api_secret="test_api_secret"
     )

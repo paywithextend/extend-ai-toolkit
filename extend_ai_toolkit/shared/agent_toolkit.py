@@ -23,7 +23,6 @@ class AgentToolkit(Generic[ToolType]):
         super().__init__()
 
         extend_api = ExtendAPI(
-            org_id=configuration.org_id,
             api_key=api_key,
             api_secret=api_secret
         )
