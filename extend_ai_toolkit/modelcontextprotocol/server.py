@@ -25,7 +25,6 @@ class ExtendMCPServer(FastMCP):
         )
 
         self._extend = ExtendAPI(
-            org_id=configuration.org_id,
             api_key=api_key,
             api_secret=api_secret
         )

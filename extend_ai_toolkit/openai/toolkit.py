@@ -15,7 +15,6 @@ class ExtendOpenAIToolkit(AgentToolkit[FunctionTool]):
 
     def __init__(
             self,
-            org_id: str,
             api_key: str,
             api_secret: str,
             configuration: Optional[Configuration]
@@ -23,7 +22,7 @@ class ExtendOpenAIToolkit(AgentToolkit[FunctionTool]):
         super().__init__(
             api_key=api_key,
             api_secret=api_secret,
-            configuration=configuration or Configuration.all_tools(org_id)
+            configuration=configuration or Configuration.all_tools()
         )
 
     def tool_for_agent(self, api: ExtendAPI, tool: Tool) -> FunctionTool:

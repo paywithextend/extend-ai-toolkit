@@ -35,10 +35,9 @@ class Tool:
 
 # Test that the classmethod all_tools creates a configuration with the expected defaults.
 def test_all_tools_configuration():
-    config = Configuration.all_tools(org_id="test_org_id")
+    config = Configuration.all_tools()
     assert config.scope is not None
-    assert config.org_id == "test_org_id"
-    assert len(config.scope) == 4
+    assert len(config.scope) == 5
     # Check that each default scope is set as expected.
     for pp in config.scope:
         if pp.type == Product.CREDIT_CARDS:
@@ -53,6 +52,9 @@ def test_all_tools_configuration():
             assert pp.actions.get("read") is True
             assert pp.actions.get("create") is True
             assert pp.actions.get("update") is True
+        elif pp.type == Product.RECEIPT_ATTACHMENTS:
+            assert pp.actions.get("read") is True
+            assert pp.actions.get("create") is True
         else:
             raise ValueError(f"Unexpected product type in configuration: {pp.type}")
 

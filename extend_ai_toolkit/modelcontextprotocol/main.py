@@ -13,7 +13,7 @@ load_dotenv()
 def build_server():
     options = Options.from_args((sys.argv[1:]), VALID_SCOPES)
     selected_tools = options.tools
-    configuration = Configuration.from_tool_str(selected_tools, options.org_id)
+    configuration = Configuration.from_tool_str(selected_tools)
 
     return ExtendMCPServer(
         api_key=options.api_key,

@@ -24,7 +24,6 @@ VALID_SCOPES = [
 
 class Configuration(BaseModel):
     scope: Optional[List[Scope]] = None
-    org_id: Optional[str]
 
     def add_scope(self, scope):
         if not self.scope:
@@ -51,7 +50,7 @@ class Configuration(BaseModel):
         return True
 
     @classmethod
-    def all_tools(cls, org_id: str = None) -> "Configuration":
+    def all_tools(cls) -> "Configuration":
         scopes: List[Scope] = []
         for tool in VALID_SCOPES:
             product_str, action_str = tool.split(".")
@@ -68,10 +67,10 @@ class Configuration(BaseModel):
                 scope = Scope.from_str(product_str, action_str)
                 scopes.append(scope)
 
-        return cls(scope=scopes, org_id=org_id)
+        return cls(scope=scopes)
 
     @classmethod
-    def from_tool_str(cls, tools: str, org_id: str) -> "Configuration":
+    def from_tool_str(cls, tools: str) -> "Configuration":
         configuration = cls(scope=[])
         tool_specs = tools.split(",") if tools else []
 
@@ -85,7 +84,6 @@ class Configuration(BaseModel):
             for product, action_str in validated_tools:
                 scope = Scope(product, Actions(**{action_str: True}))
                 configuration.add_scope(scope)
-        configuration.org_id = org_id
         return configuration
 
 
