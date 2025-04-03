@@ -44,8 +44,8 @@ class Configuration(BaseModel):
             )
             if configured_scope is None:
                 return False
-            for action in tool_scope.actions.keys():
-                if not configured_scope.actions.get(action, False):
+            for action, required in tool_scope.actions.items():
+                if required and not configured_scope.actions.get(action, False):
                     return False
         return True
 
