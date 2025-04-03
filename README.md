@@ -118,12 +118,13 @@ python -m extend_ai_toolkit.modelcontextprotocol.main --tools=virtual_cards.read
 
 SSE Transport:
 ```bash
-python -m extend_ai_toolkit.modelcontextprotocol.main_sse --tools=virtual_cards.read,credit_cards.read
+python -m extend_ai_toolkit.modelcontextprotocol.main_sse --tools=credit_cards.read --api-key="apikey" --api-secret="apisecret"
+
 ```
 
 Connect using the MCP terminal client:
 ```bash
-python -m extend_ai_toolkit.modelcontextprotocol.mcp_client
+python -m extend_ai_toolkit.modelcontextprotocol.client.mcp_client --mcp-server-host localhost --mcp-server-port 8000 --llm-provider=anthropic --llm-model=claude-3-5-sonnet-20241022
 ```
 
 ### OpenAI
