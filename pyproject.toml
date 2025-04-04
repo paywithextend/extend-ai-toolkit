@@ -1,6 +1,6 @@
 [project]
 name = "extend_ai_toolkit"
-version = "0.1.0"
+version = "1.0.0"
 description = "Extend AI Toolkit"
 authors = [
     { name = "Extend Engineering", email = "support@paywithextend.com" },
