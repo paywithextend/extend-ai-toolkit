@@ -130,12 +130,12 @@ What you CAN do is give Claude the name of a receipt in your dedicated folder an
 For advanced scenarios, you can execute the server directly using SSE transport:
 
 ```bash
-python -m extend_ai_toolkit.modelcontextprotocol.main_sse --tools=all
+python -m extend_ai_toolkit.modelcontextprotocol.main_sse --tools=all --api-key="apikey" --api-secret="apisecret"
 ```
 
 and optionally connect using the MCP terminal client:
 ```bash
-python -m extend_ai_toolkit.modelcontextprotocol.mcp_client
+python -m extend_ai_toolkit.modelcontextprotocol.client.mcp_client --mcp-server-host localhost --mcp-server-port 8000 --llm-provider=anthropic --llm-model=claude-3-5-sonnet-20241022
 ```
 
 ### OpenAI

@@ -67,8 +67,8 @@ if __name__ == "__main__":
 
         import argparse
 
-        host = os.environ.get("MCP_HOST")
-        port = os.environ.get("MCP_PORT")
+        host = os.environ.get("MCP_HOST", "127.0.0.1")
+        port = os.environ.get("MCP_PORT", "8000")  # Default to port 8000 if not set
 
         # Bind SSE request handling to MCP server
         starlette_app = build_starlette_app(mcp_server, debug=True)
