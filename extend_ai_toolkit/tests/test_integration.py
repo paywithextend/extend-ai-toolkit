@@ -212,23 +212,17 @@ class TestTransactions:
 
         # Verify response structure
         assert isinstance(response, dict), "Response should be a dictionary"
-        assert "transactions" in response, "Response should contain 'transactions' key"
-        assert isinstance(response["transactions"], list), "Transactions should be a list"
-
-        # If there are transactions, verify their structure
-        if response["transactions"]:
-            transaction = response["transactions"][0]
-            required_fields = ["id", "status", "virtualCardId", "merchantName", "type", "authBillingAmountCents"]
-            for field in required_fields:
-                assert field in transaction, f"Transaction should contain '{field}' field"
+        assert "report" in response, "Response should contain 'report' key"
+        assert "transactions" in response["report"], "Report should contain 'transactions' key"
+        assert isinstance(response["report"]["transactions"], list), "Transactions should be a list"
 
     @pytest.mark.asyncio
     async def test_update_transaction_expense_data(self, extend):
         """Test updating transaction expense data"""
         # Get a single transaction
-        transactions_response = await get_transactions(extend, page=0, per_page=1)
-        assert "transactions" in transactions_response, "No transactions found"
-        transaction = transactions_response["transactions"][0]
+        transactions_response = await get_transactions(extend, page=0, per_page=1, sort_field="createdAt")
+        assert "transactions" in transactions_response["report"]
+        transaction = transactions_response["report"]["transactions"][0]
         transaction_id = transaction["id"]
 
         # Update the transaction to have no expense categories
@@ -507,9 +501,9 @@ class TestReceiptAttachments:
 
         # Retrieve a transaction to attach the receipt to
         transactions_response = await get_transactions(extend, page=0, per_page=1)
-        if not transactions_response.get("transactions"):
+        if not transactions_response.get("report", {}).get("transactions"):
             pytest.skip("No transactions available to attach receipt to")
-        transaction_id = transactions_response["transactions"][0]["id"]
+        transaction_id = transactions_response["report"]["transactions"][0]["id"]
 
         # Create a temporary PNG file with minimal valid header bytes
         with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:

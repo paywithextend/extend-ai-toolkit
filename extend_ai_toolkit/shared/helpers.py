@@ -94,62 +94,6 @@ def format_virtual_card_details(response: Dict) -> str:
     )
 
 
-def format_transactions_list(response: Dict) -> str:
-    """Format the transactions list response"""
-    # Handle case where response is error message
-    if isinstance(response, str):
-        return response
-
-    # Get report data
-    report = response.get("pagination", {})
-    transactions = response.get("transactions", [])
-    if not transactions:
-        return "No transactions found."
-
-    # Add pagination info
-    current_page = report.get("page", 1)
-    total_pages = report.get("numPages", 1)
-    per_page = report.get("per_page", 25)
-    total_count = report.get("count", 0)
-
-    result = f"Recent Transactions (Page {current_page} of {total_pages}, {total_count} total):\n\n"
-
-    for txn in transactions:
-        amount = txn.get('clearingBillingAmountCents', txn.get('authBillingAmountCents', 0))
-        result += (
-            f"- ID: {txn['id']}\n"
-            f"  Merchant: {txn.get('merchantName', 'N/A')}\n"
-            f"  Amount: ${amount / 100:.2f}\n"
-            f"  Status: {txn['status']}\n"
-            f"  Date: {txn.get('clearedAt', txn.get('authedAt', 'N/A'))}\n"
-            f"  Card ID: {txn.get('virtualCardId', 'N/A')}\n"
-            f"  Card Name: {txn.get('virtualCardDisplayName', 'N/A')}\n"
-            f"  Card Last 4: {txn.get('last4', 'N/A')}\n"
-            f"  Card Type: {txn.get('cardType', 'N/A')}\n"
-            f"  Cardholder Name: {txn.get('cardholderName', 'N/A')}\n"
-            f"  Recipient Name: {txn.get('recipientName', 'N/A')}\n"
-            f"  Recipient Email: {txn.get('recipientEmail', 'N/A')}\n"
-            f"  Auth Code: {txn.get('authCode', 'N/A')}\n"
-            f"  Network: {txn.get('network', 'N/A')}\n"
-            f"  Merchant Category: {txn.get('merchantCategory', 'N/A')}\n"
-            f"  Merchant Category Code: {txn.get('mcc', 'N/A')}\n"
-            f"  Merchant City: {txn.get('merchantCity', 'N/A')}\n"
-            f"  Merchant State: {txn.get('merchantState', 'N/A')}\n"
-            f"  Merchant Country: {txn.get('merchantCountry', 'N/A')}\n"
-            f"  Merchant ID: {txn.get('merchantId', 'N/A')}\n"
-            f"  Original Amount: ${float(txn.get('originalAmount', amount)) / 100:.2f}\n"
-            f"  Currency: {txn.get('currency', 'USD')}\n"
-            f"  Created At: {txn.get('createdAt', 'N/A')}\n"
-            f"  Description: {txn.get('description', 'N/A')}\n"
-            f"  Notes: {txn.get('notes', 'N/A')}\n"
-            f"  Reference: {txn.get('reference', 'N/A')}\n\n"
-        )
-    if current_page < total_pages:
-        result += f"\nThere are more transactions available. Use page parameter to view next page."
-
-    return result
-
-
 def format_credit_cards_list(response: Dict) -> str:
     """Format the credit cards list response"""
     cards = response.get("creditCards", [])
@@ -189,6 +133,65 @@ def format_credit_card_detail(response: Dict) -> str:
         f"  Receipt Capture Enabled: {card_features['receiptCaptureEnabled']}\n"
         f"  Bill Pay Enabled: {card_features['billPay']}\n\n"
     )
+
+
+def format_transactions_list(response: Dict) -> str:
+    """Format the transactions list response"""
+    # Handle case where response is error message
+    if isinstance(response, str):
+        return response
+
+    # Get report data
+    report = response.get("report", {})
+    transactions = report.get("transactions", [])
+    if not transactions:
+        return "No transactions found."
+
+    # Add pagination info
+    current_page = report.get("page", 1)
+    total_pages = report.get("numPages", 1)
+    per_page = report.get("per_page", 25)
+    total_count = report.get("count", 0)
+
+    result = f"Recent Transactions (Page {current_page} of {total_pages}, {total_count} total):\n\n"
+
+    for txn in transactions:
+        amount = txn.get('clearingBillingAmountCents', txn.get('authBillingAmountCents', 0))
+        result += (
+            f"- ID: {txn['id']}\n"
+            f"  Merchant: {txn.get('merchantName', 'N/A')}\n"
+            f"  Amount: ${amount / 100:.2f}\n"
+            f"  Status: {txn['status']}\n"
+            f"  Date: {txn.get('authedAt', txn.get('clearedAt', 'N/A'))}\n"
+            f"  Credit Card ID: {txn.get('creditCardId', 'N/A')}\n"
+            f"  Credit Card Name: {txn.get('creditCardName', 'N/A')}\n"
+            f"  Virtual Card ID: {txn.get('virtualCardId', 'N/A')}\n"
+            f"  Virtual Card Name: {txn.get('virtualCardDisplayName', 'N/A')}\n"
+            f"  Virtual Card Last 4: {txn.get('last4', 'N/A')}\n"
+            f"  Cardholder Name: {txn.get('cardholderName', 'N/A')}\n"
+            f"  Cardholder Email: {txn.get('cardholderEmail', 'N/A')}\n"
+            f"  Recipient Name: {txn.get('recipientName', 'N/A')}\n"
+            f"  Recipient Email: {txn.get('recipientEmail', 'N/A')}\n"
+            f"  Approval Code: {txn.get('approvalCode', 'N/A')}\n"
+            f"  Merchant Name: {txn.get('merchantName', 'N/A')}\n"
+            f"  Merchant Category: {txn.get('mccDescription', 'N/A')}\n"
+            f"  Merchant Category Code: {txn.get('mcc', 'N/A')}\n"
+            f"  Merchant City: {txn.get('merchantCity', 'N/A')}\n"
+            f"  Merchant State: {txn.get('merchantState', 'N/A')}\n"
+            f"  Merchant Country: {txn.get('merchantCountry', 'N/A')}\n"
+            f"  Currency: {txn.get('currency', 'USD')}\n"
+            f"  Created At: {txn.get('createdAt', 'N/A')}\n"
+            f"  Description: {txn.get('description', 'N/A')}\n"
+            f"  Notes: {txn.get('notes', 'N/A')}\n"
+            f"  Review Status: {txn.get('reviewStatus', 'N/A')}\n"
+            f"  Receipt Required: {txn.get('receiptRequired', 'false')}\n"
+            f"  Receipt Attachments Count: {txn.get('attachmentsCount', 'N/A')}\n"
+            f"  Synced to ERP: {True if txn.get('connectedPlatforms') and len(txn.get('connectedPlatforms')) > 0 else False}\n"
+        )
+    if current_page < total_pages:
+        result += f"\nThere are more transactions available. Use page parameter to view next page."
+
+    return result
 
 
 def format_transaction_details(response: Dict) -> str:
