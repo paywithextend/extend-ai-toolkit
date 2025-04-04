@@ -1,6 +1,6 @@
 [project]
 name = "extend_ai_toolkit"
-version = "0.1.0"
+version = "1.0.0"
 description = "Extend AI Toolkit"
 authors = [
     { name = "Extend Engineering", email = "support@paywithextend.com" },
@@ -21,7 +21,7 @@ dependencies = [
     "starlette>=0.40.0,<0.46.0",
     "openai==1.66.3",
     "openai-agents==0.0.4",
-    "extend @ git+https://github.com/paywithextend/extend-python.git@development#egg=extend",
+    "paywithextend @ git+https://github.com/paywithextend/extend-python.git@development#egg=paywithextend",
 ]
 
 [project.urls]

@@ -68,6 +68,7 @@ The toolkit provides a comprehensive set of tools organized by functionality:
 - `create_expense_category`: Create a new expense category
 - `create_expense_category_label`: Add a label to an expense category
 - `update_expense_category`: Modify an existing expense category
+- `create_receipt_attachment`: Upload and attach a receipt to a transaction
 
 ## Usage Examples
 
@@ -80,7 +81,7 @@ The toolkit provides resources in the `extend_ai_toolkit.modelcontextprotocol` p
 Test Extend MCP server locally using MCP Inspector:
 
 ```bash
-npx @modelcontextprotocol/inspector python extend_ai_toolkit/modelcontextprotocol/main.py --tools=virtual_cards.read,credit_cards.read
+npx @modelcontextprotocol/inspector python extend_ai_toolkit/modelcontextprotocol/main.py --tools=all
 ```
 
 #### Claude Desktop Integration
@@ -89,6 +90,14 @@ Add this tool as an MCP server to Claude Desktop by editing the config file:
 
 On MacOS: `~/Library/Application\ Support/Claude/claude_desktop_config.json`
 On Windows: `%APPDATA%/Claude/claude_desktop_config.json`
+
+if you want to use the create_receipt_attachment tool with claude desktop you'll need to install the filesystem mcp server via `npm install @modelcontextprotocol/server-filesystem` add then add to the config file as well. 
+
+Please note: due to current limitations images uploaded directly to the Claude Desktop cannot be uploaded to Extend due to the fact that the Desktop app does not have access to the underlying image data. This is why the filesystem mcp server is necessary. And unfortunately, the only way to perform image analysis (parsing contents of receipt images, etc) is is to upload the receipts to Claude Desktop directly. 
+
+What you CAN do is give Claude the name of a receipt in your dedicated folder and tell it to attach it to a specific transaction. Alternatively, you can upload the receipt and it's filename (important) to Claude to have it analyze the image, find the correct transaction in Extend, and then upload the actual file using the filename you provided earlier. 
+
+
 
 ```json
 {
@@ -103,26 +112,28 @@ On Windows: `%APPDATA%/Claude/claude_desktop_config.json`
       "EXTEND_API_KEY": "apik_XXXX",
       "EXTEND_API_SECRET": "XXXXX"
     }
+  },
+  // optional: if you want to use the create_receipt_attachment tool
+  "filesystem": { 
+    "command": "npx",
+    "args": [
+      "-y",
+      "@modelcontextprotocol/server-filesystem",
+      "/path/to/receipts/folder"
+    ]
   }
 }
-```
+```  
 
 #### Direct Execution
 
-For advanced scenarios, you can execute the server directly:
+For advanced scenarios, you can execute the server directly using SSE transport:
 
-STDIO Transport:
 ```bash
-python -m extend_ai_toolkit.modelcontextprotocol.main --tools=virtual_cards.read,credit_cards.read
+python -m extend_ai_toolkit.modelcontextprotocol.main_sse --tools=all --api-key="apikey" --api-secret="apisecret"
 ```
 
-SSE Transport:
-```bash
-python -m extend_ai_toolkit.modelcontextprotocol.main_sse --tools=credit_cards.read --api-key="apikey" --api-secret="apisecret"
-
-```
-
-Connect using the MCP terminal client:
+and optionally connect using the MCP terminal client:
 ```bash
 python -m extend_ai_toolkit.modelcontextprotocol.client.mcp_client --mcp-server-host localhost --mcp-server-port 8000 --llm-provider=anthropic --llm-model=claude-3-5-sonnet-20241022
 ```

@@ -23,16 +23,30 @@ async def get_virtual_cards(
         per_page: int = 10,
         status: Optional[str] = None,
         recipient: Optional[str] = None,
-        search_term: Optional[str] = None
+        search_term: Optional[str] = None,
+        sort_field: Optional[str] = None,
+        sort_direction: Optional[str] = None,
 ) -> Dict:
-    """Get list of virtual cards"""
+    """Get list of virtual cards
+
+    Args:
+        page (int): The page number for pagination. Defaults to 0.
+        per_page (int): The number of virtual cards to return per page. Defaults to 10.
+        status (Optional[str]): Filter cards by status (e.g., "ACTIVE", "CANCELLED", "PENDING", "EXPIRED", "CLOSED", "CONSUMED")
+        recipient (Optional[str], optional): A filter by recipient identifier. Defaults to None.
+        search_term (Optional[str], optional): A term to search virtual cards by. Defaults to None.
+        sort_field (Optional[str]): Field to sort by "createdAt", "updatedAt", "balanceCents", "displayName", "type", or "status"
+        sort_direction (Optional[str]): Direction to sort (ASC or DESC)
+    """
     try:
         response = await extend.virtual_cards.get_virtual_cards(
             page=page,
             per_page=per_page,
-            status=status,
+            status=status.upper() if status else None,
             recipient=recipient,
-            search_term=search_term
+            search_term=search_term,
+            sort_field=sort_field,
+            sort_direction=sort_direction
         )
         return response
 
@@ -192,11 +206,14 @@ async def get_transactions(
         extend: ExtendClient,
         page: int = 0,
         per_page: int = 50,
-        start_date: Optional[str] = None,
-        end_date: Optional[str] = None,
+        from_date: Optional[str] = None,
+        to_date: Optional[str] = None,
+        status: Optional[str] = None,
         virtual_card_id: Optional[str] = None,
         min_amount_cents: Optional[int] = None,
-        max_amount_cents: Optional[int] = None
+        max_amount_cents: Optional[int] = None,
+        search_term: Optional[str] = None,
+        sort_field: Optional[str] = None,
 ) -> Dict:
     """
     Get a list of recent transactions
@@ -204,22 +221,30 @@ async def get_transactions(
     Args:
         page (int): pagination page number,
         per_page (int): number of transactions per page,
-        start_date: Start date (YYYY-MM-DD)
-        end_date: End date (YYYY-MM-DD)
-        virtual_card_id (str): Filter by specific virtual card
-        min_amount_cents (int): Minimum amount in cents
-        max_amount_cents (int): Maximum amount in cents
+        from_date (Optional[str]): Start date (YYYY-MM-DD)
+        to_date (Optional[str]): End date (YYYY-MM-DD)
+        status (Optional[str]): Filter transactions by status (e.g., "PENDING", "CLEARED", "DECLINED", "NO_MATCH", "AVS_PASS", "AVS_FAIL", "AUTH_REVERSAL")
+        virtual_card_id (Optional[str]): Filter by specific virtual card
+        min_amount_cents (Optional[int]): Minimum amount in cents
+        max_amount_cents (Optional[int]): Maximum amount in cents
+        search_term (Optional[str]): Filter transactions by search term (e.g., "Subscription")
+        sort_field (Optional[str]): Field to sort by, with optional direction
+                                    Use "recipientName", "merchantName", "amount", "date" for ASC
+                                    Use "-recipientName", "-merchantName", "-amount", "-date" for DESC
 
     """
     try:
         response = await extend.transactions.get_transactions(
-            page,
-            per_page,
-            start_date,
-            end_date,
-            virtual_card_id,
-            min_amount_cents,
-            max_amount_cents
+            page=page,
+            per_page=per_page,
+            from_date=from_date,
+            to_date=to_date,
+            status=status.upper() if status else None,
+            virtual_card_id=virtual_card_id,
+            min_amount_cents=min_amount_cents,
+            max_amount_cents=max_amount_cents,
+            search_term=search_term,
+            sort_field=sort_field
         )
         return response
 
@@ -249,13 +274,16 @@ async def get_credit_cards(
         per_page: int = 10,
         status: Optional[str] = None,
         search_term: Optional[str] = None,
+        sort_direction: Optional[str] = None,
 ) -> Dict:
     """Get a list of credit cards"""
     try:
         response = await extend.credit_cards.get_credit_cards(
             page=page,
             per_page=per_page,
-            status=status
+            status=status.upper() if status else None,
+            search_term=search_term,
+            sort_direction=sort_direction,
         )
         return response
 
