@@ -21,7 +21,7 @@ dependencies = [
     "starlette>=0.40.0,<0.46.0",
     "openai==1.66.3",
     "openai-agents==0.0.4",
-    "extend @ git+https://github.com/paywithextend/extend-python.git@development#egg=extend",
+    "paywithextend @ git+https://github.com/paywithextend/extend-python.git@development#egg=paywithextend",
 ]
 
 [project.urls]
