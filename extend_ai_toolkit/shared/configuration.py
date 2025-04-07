@@ -8,8 +8,6 @@ from .tools import Tool
 from .utils import pop_first
 
 VALID_SCOPES = [
-    'virtual_cards.create',
-    'virtual_cards.update',
     'virtual_cards.read',
     'credit_cards.read',
     'transactions.read',

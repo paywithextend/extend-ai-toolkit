@@ -36,10 +36,6 @@ class ExtendMCPServer(FastMCP):
                     fn = functions.get_virtual_cards
                 case ExtendAPITools.GET_VIRTUAL_CARD_DETAIL.value:
                     fn = functions.get_virtual_card_detail
-                case ExtendAPITools.CREATE_VIRTUAL_CARD.value:
-                    fn = functions.create_virtual_card
-                case ExtendAPITools.UPDATE_VIRTUAL_CARD.value:
-                    fn = functions.update_virtual_card
                 case ExtendAPITools.CANCEL_VIRTUAL_CARD.value:
                     fn = functions.cancel_virtual_card
                 case ExtendAPITools.CLOSE_VIRTUAL_CARD.value:

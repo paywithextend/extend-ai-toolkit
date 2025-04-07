@@ -23,24 +23,6 @@ def format_virtual_cards_list(response: Dict) -> str:
     return result
 
 
-def format_updated_virtual_card(response: Dict) -> str:
-    """Format the update virtual card response"""
-    card = response.get("virtualCard", {})
-    if not card:
-        return "Virtual card not found."
-
-    return (
-        f"Virtual Card Updated Successfully!\n\n"
-        f"ID: {card['id']}\n"
-        f"Name: {card['displayName']}\n"
-        f"Balance: ${card['balanceCents'] / 100:.2f}\n"
-        f"Status: {card['status']}\n"
-        f"Valid From: {card.get('validFrom', 'N/A')}\n"
-        f"Valid To: {card.get('validTo', 'N/A')}\n"
-        f"Notes: {card.get('notes', 'N/A')}\n"
-    )
-
-
 def format_canceled_virtual_card(response: Dict) -> str:
     """Format the canceled virtual card response"""
     card = response.get("virtualCard", {})

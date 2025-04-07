@@ -15,27 +15,24 @@ load_dotenv()
 # Get required environment variables
 api_key = os.environ.get("EXTEND_API_KEY")
 api_secret = os.environ.get("EXTEND_API_SECRET")
-org_id = os.environ.get("ORGANIZATION_ID")
 
 # Validate environment variables
-if not all([api_key, api_secret, org_id]):
-    raise ValueError("Missing required environment variables. Please set EXTEND_API_KEY, EXTEND_API_SECRET, and ORGANIZATION_ID")
+if not all([api_key, api_secret]):
+    raise ValueError("Missing required environment variables. Please set EXTEND_API_KEY and  EXTEND_API_SECRET")
 
 llm = ChatOpenAI(
     model="gpt-4o",
 )
 
 extend_langchain_toolkit = ExtendLangChainToolkit(
-    org_id,    
     api_key,
     api_secret,
     Configuration(
       scope=[
-        Scope(Product.VIRTUAL_CARDS, actions=Actions(create=True, update=True, read=True)),
+        Scope(Product.VIRTUAL_CARDS, actions=Actions(read=True)),
         Scope(Product.CREDIT_CARDS, actions=Actions(read=True)),
         Scope(Product.TRANSACTIONS, actions=Actions(read=True)),
-       ],
-       org_id=org_id
+       ]
     )
 )
 
@@ -56,7 +53,6 @@ async def chat_with_agent():
     print("- Show details for a specific virtual card")
     print("- Show transactions for a specific period")
     print("- Show details for a specific transaction")
-    print("- Create or update virtual cards")
     print("\nType 'exit' to end the conversation.\n")
     
     while True:

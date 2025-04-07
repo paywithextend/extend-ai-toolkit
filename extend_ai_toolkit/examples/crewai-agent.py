@@ -19,44 +19,40 @@ def validate_env_vars() -> tuple[str, str, str]:
     """Validate required environment variables.
     
     Returns:
-        Tuple of (api_key, api_secret, org_id)
+        Tuple of (api_key, api_secret)
         
     Raises:
         ValueError: If any required environment variables are missing
     """
     api_key = os.environ.get("EXTEND_API_KEY")
     api_secret = os.environ.get("EXTEND_API_SECRET")
-    org_id = os.environ.get("ORGANIZATION_ID")
     anthropic_key = os.environ.get("ANTHROPIC_API_KEY")
     
-    if not all([api_key, api_secret, org_id, anthropic_key]):
+    if not all([api_key, api_secret, anthropic_key]):
         missing = []
         if not api_key: missing.append("EXTEND_API_KEY")
         if not api_secret: missing.append("EXTEND_API_SECRET")
-        if not org_id: missing.append("ORGANIZATION_ID")
         if not anthropic_key: missing.append("ANTHROPIC_API_KEY")
         raise ValueError(f"Missing required environment variables: {', '.join(missing)}")
         
-    return api_key, api_secret, org_id
+    return api_key, api_secret
 
 
 async def main():
     try:
         # Validate environment variables
-        api_key, api_secret, org_id = validate_env_vars()
+        api_key, api_secret = validate_env_vars()
         
         # Initialize the CrewAI toolkit
         toolkit = ExtendCrewAIToolkit(
-            org_id=org_id,
             api_key=api_key,
             api_secret=api_secret,
             configuration=Configuration(
                 scope=[
-                    Scope(Product.VIRTUAL_CARDS, actions=Actions(create=True, update=True, read=True)),
+                    Scope(Product.VIRTUAL_CARDS, actions=Actions(read=True)),
                     Scope(Product.CREDIT_CARDS, actions=Actions(read=True)),
                     Scope(Product.TRANSACTIONS, actions=Actions(read=True)),
-                ],
-                org_id=org_id
+                ]
             )
         )
 
