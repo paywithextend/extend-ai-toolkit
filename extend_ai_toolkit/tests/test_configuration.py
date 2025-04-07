@@ -44,8 +44,6 @@ def test_all_tools_configuration():
             assert pp.actions.get("read") is True
         elif pp.type == Product.VIRTUAL_CARDS:
             assert pp.actions.get("read") is True
-            assert pp.actions.get("create") is True
-            assert pp.actions.get("update") is True
         elif pp.type == Product.TRANSACTIONS:
             assert pp.actions.get("read") is True
         elif pp.type == Product.EXPENSE_CATEGORIES:
@@ -69,17 +67,6 @@ def test_is_tool_in_scope_success():
     )
     tool = Tool(name="Tool1", required_scope=[tool_perm])
     # Assuming the default configuration for CREDIT_CARDS has read True.
-    assert config.is_tool_in_scope(tool) is True
-
-
-def test_is_tool_in_scope_with_limited_scope_success():
-    config = Configuration(scope=[Scope(Product.VIRTUAL_CARDS, actions=Actions(create=True))])
-    # Create a tool that requires virtual_cards.create scope.
-    tool_perm = ToolScope(
-        product_type=Product.VIRTUAL_CARDS,
-        actions=Actions(create=True)
-    )
-    tool = Tool(name="Tool1", required_scope=[tool_perm])
     assert config.is_tool_in_scope(tool) is True
 
 
@@ -119,23 +106,9 @@ def test_allowed_tools():
             )
         ]
     )
-    # Tool3 has multiple requirements and should pass if all are met.
+    # Tool3 for expense categories; requires read access.
     tool3 = Tool(
         name="Tool3",
-        required_scope=[
-            ToolScope(
-                product_type=Product.CREDIT_CARDS,
-                actions=Actions(read=True)
-            ),
-            ToolScope(
-                product_type=Product.VIRTUAL_CARDS,
-                actions=Actions(update=True)
-            )
-        ]
-    )
-    # Tool4 for expense categories; requires read access.
-    tool4 = Tool(
-        name="Tool4",
         required_scope=[
             ToolScope(
                 product_type=Product.EXPENSE_CATEGORIES,
@@ -145,13 +118,12 @@ def test_allowed_tools():
     )
 
     # Get allowed tools from configuration.
-    allowed = config.allowed_tools([tool1, tool2, tool3, tool4])
+    allowed = config.allowed_tools([tool1, tool2, tool3])
     allowed_names = [tool.name for tool in allowed]
 
-    # Tool1, Tool3, and Tool4 should be allowed; Tool2 should not.
+    # Tool1 and Tool3 should be allowed; Tool2 should not.
     assert "Tool1" in allowed_names
     assert "Tool3" in allowed_names
-    assert "Tool4" in allowed_names
     assert "Tool2" not in allowed_names
 
 

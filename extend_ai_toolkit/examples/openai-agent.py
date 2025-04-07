@@ -10,20 +10,17 @@ load_dotenv()
 
 api_key = os.environ.get("EXTEND_API_KEY")
 api_secret = os.environ.get("EXTEND_API_SECRET")
-org_id = os.environ.get("ORGANIZATION_ID")
 
 async def main():
     extend_openai_toolkit = ExtendOpenAIToolkit(
-        org_id,    
         api_key,
         api_secret,
         Configuration(
         scope=[
-            Scope(Product.VIRTUAL_CARDS, actions=Actions(create=True, update=True, read=True)),
+            Scope(Product.VIRTUAL_CARDS, actions=Actions(read=True)),
             Scope(Product.CREDIT_CARDS, actions=Actions(read=True)),
             Scope(Product.TRANSACTIONS, actions=Actions(read=True)),
-        ],
-        org_id=org_id
+        ]
         )  
     )
 

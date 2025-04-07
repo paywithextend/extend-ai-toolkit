@@ -7,8 +7,6 @@ from .enums import ExtendAPITools
 from .prompts import (
     get_virtual_cards_prompt,
     get_virtual_card_detail_prompt,
-    create_virtual_card_prompt,
-    update_virtual_card_prompt,
     cancel_virtual_card_prompt,
     close_virtual_card_prompt,
     get_transactions_prompt,
@@ -27,8 +25,6 @@ from .prompts import (
 from .schemas import (
     GetVirtualCards,
     GetVirtualCardDetail,
-    CreateVirtualCard,
-    UpdateVirtualCard,
     CancelVirtualCard,
     CloseVirtualCard,
     GetCreditCards,
@@ -80,34 +76,6 @@ tools: List[Tool] = [
             Scope(
                 type=Product.VIRTUAL_CARDS,
                 actions={"read": True})
-        ],
-    ),
-    Tool(
-        method=ExtendAPITools.CREATE_VIRTUAL_CARD,
-        name="create_virtual_card",
-        description=create_virtual_card_prompt,
-        args_schema=CreateVirtualCard,
-        required_scope=[
-            Scope(
-                type=Product.VIRTUAL_CARDS,
-                actions={
-                    "read": True,
-                    "create": True,
-                })
-        ],
-    ),
-    Tool(
-        method=ExtendAPITools.UPDATE_VIRTUAL_CARD,
-        name="update_virtual_card",
-        description=update_virtual_card_prompt,
-        args_schema=UpdateVirtualCard,
-        required_scope=[
-            Scope(
-                type=Product.VIRTUAL_CARDS,
-                actions={
-                    "read": True,
-                    "update": True,
-                })
         ],
     ),
     Tool(

@@ -56,9 +56,6 @@ def mock_configuration():
     # Configure the mock to return our controlled list of tools
     mock_config.allowed_tools.return_value = allowed_tools
 
-    # Add org_id property
-    mock_config.org_id = "test_org_id"
-
     return mock_config
 
 
@@ -67,7 +64,6 @@ def toolkit(mock_extend_api, mock_configuration):
     """Fixture that creates an ExtendOpenAIToolkit instance with mocks"""
     mock_api_class, mock_api_instance = mock_extend_api
     toolkit = ExtendOpenAIToolkit(
-        org_id="test_org_id",
         api_key="test_api_key",
         api_secret="test_api_secret",
         configuration=mock_configuration
@@ -79,7 +75,6 @@ def test_init_creates_extend_api(toolkit, mock_extend_api):
     """Test that ExtendAPI is initialized with correct credentials"""
     mock_api_class, _ = mock_extend_api
     mock_api_class.assert_called_once_with(
-        org_id="test_org_id",
         api_key="test_api_key",
         api_secret="test_api_secret"
     )

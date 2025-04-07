@@ -25,42 +25,6 @@ It takes the following argument:
 The response contains all details of the virtual card.
 """
 
-create_virtual_card_prompt = """
-This tool will create a new virtual card in Extend.
-It requires the following arguments:
-- credit_card_id (str): The ID of the credit card to use (retrieve this from the list of credit cards).
-- display_name (str): The display name for the virtual card.
-- amount_dollars (float): The amount to load on the card (in dollars).
-- recipient_email (Optional[str]): An optional email address for the recipient.
-- cardholder_email (Optional[str]): An optional email address for the cardholder.
-- valid_from (Optional[str]): The start date for the card’s validity (YYYY-MM-DD).
-- valid_to (Optional[str]): The end date for the card’s validity (YYYY-MM-DD).
-- notes (Optional[str]): Any additional notes for the card.
-- is_recurring (bool): Set to True if you want to create a recurring card.
-- period (Optional[str]): Recurrence period (DAILY, WEEKLY, MONTHLY, or YEARLY).
-- interval (Optional[int]): Number of periods between recurrences.
-- terminator (Optional[str]): Recurrence terminator (NONE, COUNT, DATE, or COUNT_OR_DATE).
-- count (Optional[int]): Number of recurrences if using a COUNT terminator.
-- until (Optional[str]): End date for recurrence if using a DATE terminator.
-- by_week_day (Optional[int]): Day of the week for WEEKLY recurrence (0 for Monday through 6 for Sunday).
-- by_month_day (Optional[int]): Day of the month for MONTHLY recurrence (1-31).
-- by_year_day (Optional[int]): Day of the year for YEARLY recurrence (1-365).
-
-Ensure you supply any recurrence parameters only if is_recurring is True.
-"""
-
-update_virtual_card_prompt = """
-This tool updates an existing virtual card in Extend.
-It takes the following required arguments:
-- virtual_card_id (str): The ID of the virtual card to update.
-- display_name (str): The new display name for the virtual card.
-- balance_dollars (float): The new balance for the card (in dollars).
-
-It also accepts these optional arguments:
-- valid_to (Optional[str]): New expiration date (YYYY-MM-DD).
-- notes (Optional[str]): Updated notes for the card.
-"""
-
 cancel_virtual_card_prompt = """
 This tool cancels a virtual card in Extend.
 It takes the following argument:

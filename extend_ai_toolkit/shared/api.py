@@ -32,12 +32,6 @@ class ExtendAPI:
             case ExtendAPITools.GET_VIRTUAL_CARD_DETAIL.value:
                 output = await get_virtual_card_detail(self.extend, *args, **kwargs)
                 return format_virtual_card_details(output)
-            case ExtendAPITools.CREATE_VIRTUAL_CARD.value:
-                output = await create_virtual_card(self.extend, *args, **kwargs)
-                return format_virtual_card_details(output)
-            case ExtendAPITools.UPDATE_VIRTUAL_CARD.value:
-                output = await update_virtual_card(self.extend, *args, **kwargs)
-                return format_updated_virtual_card(output)
             case ExtendAPITools.CANCEL_VIRTUAL_CARD.value:
                 output = await cancel_virtual_card(self.extend, *args, **kwargs)
                 return format_canceled_virtual_card(output)

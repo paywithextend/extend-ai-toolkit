@@ -16,7 +16,6 @@ class ExtendCrewAIToolkit(AgentToolkit[BaseTool]):
 
     def __init__(
         self,
-        org_id: str,
         api_key: str,
         api_secret: str,
         configuration: Optional[Configuration] = None
@@ -24,7 +23,7 @@ class ExtendCrewAIToolkit(AgentToolkit[BaseTool]):
         super().__init__(
             api_key=api_key,
             api_secret=api_secret,
-            configuration=configuration or Configuration.all_tools(org_id)
+            configuration=configuration
         )
         self._llm = None
 
