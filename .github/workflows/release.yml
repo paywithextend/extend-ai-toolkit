@@ -34,11 +34,10 @@ jobs:
           rm -rf build dist *.egg-info
           make build ENV=stage
 
-      - name: Extract Version from pyproject.toml
+      - name: Extract Version from version file
         id: get_version
         run: |
-          # Extract the version assuming a line like: version = "0.1.0"
-          VERSION=$(grep -Po '^version\s*=\s*"\K[^"]+' pyproject.toml)
+          VERSION=$(grep -Po '^__version__\s*=\s*"\K[^"]+' extend_ai_toolkit/__version__.py)
           echo "Version extracted: $VERSION"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
