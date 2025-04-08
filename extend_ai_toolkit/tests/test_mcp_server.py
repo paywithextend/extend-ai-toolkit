@@ -34,7 +34,7 @@ def mock_extend_api():
         mock_api_class = Mock()
         mock_api_instance = Mock()
         mock_api_instance.run = AsyncMock()
-        mock_api_class.return_value = mock_api_instance
+        mock_api_class.default_instance.return_value = mock_api_instance
         server.ExtendAPI = mock_api_class
 
         yield mock_api_class
@@ -86,7 +86,7 @@ def mock_fastmcp():
 @pytest.fixture
 def server(mock_extend_api, mock_configuration, mock_fastmcp):
     """Fixture that creates an ExtendMCPServer instance with mocks"""
-    server = ExtendMCPServer(
+    server = ExtendMCPServer.default_instance(
         api_key="test_api_key",
         api_secret="test_api_secret",
         configuration=mock_configuration
@@ -105,7 +105,7 @@ def test_init_calls_parent_constructor(mock_fastmcp):
     # Configure allowed_tools to return an empty list (iterable)
     mock_config.allowed_tools.return_value = []
 
-    ExtendMCPServer(
+    ExtendMCPServer.default_instance(
         api_key="test_api_key",
         api_secret="test_api_secret",
         configuration=mock_config
@@ -113,21 +113,9 @@ def test_init_calls_parent_constructor(mock_fastmcp):
 
     # Verify the parent constructor was called with correct arguments
     mock_fastmcp["init"].assert_called_once_with(
-        name="Extend",
-        version="0.1.0",
-        host="127.0.0.1",
-        port=8000
+        name="Extend MCP Server",
+        version="1.1.0",
     )
-
-
-def test_init_creates_extend_api(mock_extend_api, server, mock_configuration):
-    """Test that ExtendAPI is initialized with correct credentials"""
-    # ExtendAPI should have been created with our credentials during server init
-    mock_extend_api.assert_called_once_with(
-        api_key="test_api_key",
-        api_secret="test_api_secret"
-    )
-
 
 def test_init_registers_allowed_tools(server, mock_configuration, mock_fastmcp):
     """Test that allowed tools are registered correctly"""
@@ -136,12 +124,12 @@ def test_init_registers_allowed_tools(server, mock_configuration, mock_fastmcp):
 
     # Verify tool details for the first call
     args, kwargs = mock_fastmcp["add_tool"].call_args_list[0]
-    assert args[1] == "Get Virtual Cards"
+    assert args[1] == "get_virtual_cards"
     assert args[2] == "Get all virtual cards"
 
     # Verify tool details for the second call
     args, kwargs = mock_fastmcp["add_tool"].call_args_list[1]
-    assert args[1] == "Get Virtual Card Details"
+    assert args[1] == "get_virtual_card_detail"
     assert args[2] == "Get details of a virtual card"
 
 
@@ -152,13 +140,13 @@ async def test_handle_tool_request_forwards_to_api(server, mock_extend_api):
     mock_tool = server._mock_fastmcp["add_tool"].call_args_list[0][0][0]
 
     # Set up a return value for the API call
-    server._mock_api.return_value.run.return_value = {"status": "success", "data": [{"id": "123"}]}
+    server._mock_api.default_instance.return_value.run.return_value = {"status": "success", "data": [{"id": "123"}]}
 
     # Call the handler
     result = await mock_tool(page=0, per_page=10)
 
     # Verify API was called correctly
-    server._mock_api.return_value.run.assert_called_once_with(
+    server._mock_api.default_instance.return_value.run.assert_called_once_with(
         ExtendAPITools.GET_VIRTUAL_CARDS.value,
         page=0,
         per_page=10

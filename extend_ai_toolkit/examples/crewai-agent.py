@@ -44,7 +44,7 @@ async def main():
         api_key, api_secret = validate_env_vars()
         
         # Initialize the CrewAI toolkit
-        toolkit = ExtendCrewAIToolkit(
+        toolkit = ExtendCrewAIToolkit.default_instance(
             api_key=api_key,
             api_secret=api_secret,
             configuration=Configuration(

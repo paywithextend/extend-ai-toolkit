@@ -24,7 +24,7 @@ llm = ChatOpenAI(
     model="gpt-4o",
 )
 
-extend_langchain_toolkit = ExtendLangChainToolkit(
+extend_langchain_toolkit = ExtendLangChainToolkit.default_instance(
     api_key,
     api_secret,
     Configuration(

@@ -12,7 +12,7 @@ api_key = os.environ.get("EXTEND_API_KEY")
 api_secret = os.environ.get("EXTEND_API_SECRET")
 
 async def main():
-    extend_openai_toolkit = ExtendOpenAIToolkit(
+    extend_openai_toolkit = ExtendOpenAIToolkit.default_instance(
         api_key,
         api_secret,
         Configuration(
