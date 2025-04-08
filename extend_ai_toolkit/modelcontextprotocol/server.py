@@ -6,10 +6,11 @@ from mcp.server import FastMCP
 from mcp.types import AnyFunction
 
 from extend_ai_toolkit.shared import Configuration
+from extend_ai_toolkit.shared import ExtendAPI
 from extend_ai_toolkit.shared import ExtendAPITools
 from extend_ai_toolkit.shared import functions
 from extend_ai_toolkit.shared import tools, Tool
-from extend_ai_toolkit.shared.api import ExtendAPI
+from ..__version__ import __version__ as _version
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -18,8 +19,8 @@ logger.setLevel(logging.INFO)
 class ExtendMCPServer(FastMCP):
     def __init__(self, api_key: str, api_secret: str, configuration: Configuration):
         super().__init__(
-            name="Extend",
-            version="1.0.0"
+            name="Extend MCP Server",
+            version=_version
         )
 
         self._extend = ExtendAPI(

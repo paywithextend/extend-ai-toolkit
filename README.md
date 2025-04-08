@@ -68,7 +68,9 @@ The toolkit provides a comprehensive set of tools organized by functionality:
 - `create_expense_category`: Create a new expense category
 - `create_expense_category_label`: Add a label to an expense category
 - `update_expense_category`: Modify an existing expense category
-- `create_receipt_attachment`: Upload and attach a receipt to a transaction
+- `create_receipt_attachment`: Upload a receipt (and optionally attach to a transaction)
+- `automatch_receipts`: Initiate async job to automatch uploaded receipts to transactions
+- `get_automatch_status`: Get the status of an automatch job
 
 ## Usage Examples
 
@@ -93,10 +95,9 @@ On Windows: `%APPDATA%/Claude/claude_desktop_config.json`
 
 if you want to use the create_receipt_attachment tool with claude desktop you'll need to install the filesystem mcp server via `npm install @modelcontextprotocol/server-filesystem` add then add to the config file as well. 
 
-Please note: due to current limitations images uploaded directly to the Claude Desktop cannot be uploaded to Extend due to the fact that the Desktop app does not have access to the underlying image data. This is why the filesystem mcp server is necessary. And unfortunately, the only way to perform image analysis (parsing contents of receipt images, etc) is is to upload the receipts to Claude Desktop directly. 
+Please note: due to current limitations images uploaded directly to the Claude Desktop cannot be uploaded to Extend due to the fact that the Claude Desktop app does not have access to the underlying image data. This is why the [Filesystem MCP Server](https://github.com/modelcontextprotocol/servers/tree/main/src/filesystem) is necessary. 
 
-What you CAN do is give Claude the name of a receipt in your dedicated folder and tell it to attach it to a specific transaction. Alternatively, you can upload the receipt and it's filename (important) to Claude to have it analyze the image, find the correct transaction in Extend, and then upload the actual file using the filename you provided earlier. 
-
+With the addition of Filesystem, you can setup a dedicated folder for receipts, and tell Claude it to upload the receipt and automatch it to the most likely transaction. Alternatively, if you know the transaction you want to attach the receipt to then you can tell Claude to upload the receipt for that transaction (and skip the automatch process. 
 
 
 ```json
@@ -125,9 +126,9 @@ What you CAN do is give Claude the name of a receipt in your dedicated folder an
 }
 ```  
 
-#### Direct Execution
+#### Remote Execution
 
-For advanced scenarios, you can execute the server directly using SSE transport:
+You can also run your server remotely and communicate via SSE transport:
 
 ```bash
 python -m extend_ai_toolkit.modelcontextprotocol.main_sse --tools=all --api-key="apikey" --api-secret="apisecret"
