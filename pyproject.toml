@@ -1,10 +1,10 @@
 [project]
 name = "extend_ai_toolkit"
-version = "1.0.0"
 description = "Extend AI Toolkit"
 authors = [
     { name = "Extend Engineering", email = "support@paywithextend.com" },
 ]
+dynamic = ["version"]
 keywords = ["extend", "api", "virtual cards", "payments", "ai", "agent", "mcp"]
 readme = "README.md"
 license = { text = "MIT" }
@@ -34,6 +34,9 @@ dev = ["pytest>=7.0.1", "mypy>=1.11.1", "ruff>=0.6.1"]
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.hatch.version]
+path = "extend_ai_toolkit/__version__.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["extend_ai_toolkit"]
