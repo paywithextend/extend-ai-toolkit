@@ -1,0 +1,66 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
+
+      - name: Install dependencies
+        run: sudo apt-get install make
+
+      - name: Create virtual environment
+        run: make venv
+
+      - name: Build package
+        run: |
+          set -x
+          source venv/bin/activate
+          rm -rf build dist *.egg-info
+          make build ENV=stage
+
+      - name: Extract Version from pyproject.toml
+        id: get_version
+        run: |
+          # Extract the version assuming a line like: version = "0.1.0"
+          VERSION=$(grep -Po '^version\s*=\s*"\K[^"]+' pyproject.toml)
+          echo "Version extracted: $VERSION"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ steps.get_version.outputs.version }}
+          release_name: v${{ steps.get_version.outputs.version }}
+          draft: false
+          prerelease: false
+
+      - name: Install Twine
+        run: |
+          source venv/bin/activate
+          pip install twine
+
+      - name: Upload to PyPI
+        env:
+          PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          source venv/bin/activate
+          twine upload dist/* -u __token__ -p $PYPI_API_TOKEN
