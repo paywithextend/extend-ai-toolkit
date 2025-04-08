@@ -8,6 +8,7 @@ class Actions(TypedDict, total=False):
     create: Optional[bool]
     update: Optional[bool]
     read: Optional[bool]
+    match: Optional[bool]
 
 
 @dataclass

@@ -241,14 +241,34 @@ The response includes the updated expense category label details.
 """
 
 create_receipt_attachment_prompt = """
+IMPORTANT: This does not require a transaction id to be passed in. Do not use one if the user does not specify a transaction id.
+
 This tool creates a receipt attachment in Extend by uploading a file via multipart form data.
 It takes the following arguments:
-- transaction_id (str): The unique identifier of the transaction to attach the receipt to.
 - file_path (str): The file path for the receipt attachment image (the file should be accessible and in a supported format, e.g., PNG, JPEG, GIF, BMP, TIFF, HEIC, or PDF).
+- transaction_id (Optional[str]): The optional unique identifier of the transaction to attach the receipt to.
 
 The response is a JSON object containing details of the receipt attachment, including:
 - id: The unique identifier of the attachment.
 - contentType: The MIME type (e.g., 'image/png').
 - urls: A dictionary with URLs for the original image, main image, and thumbnail.
 - createdAt and updatedAt timestamps.
+"""
+
+automatch_receipts_prompt = """
+This tool initiates an asynchronous bulk receipt automatch job in Extend.
+It takes the following argument:
+- receipt_attachment_ids (List[str]): A list of receipt attachment IDs to be automatched.
+The response is a JSON object containing details of the automatch job, including:
+- id: The unique bulk job ID.
+- tasks: A list of task objects, each including the task ID, status, associated receipt attachment ID, matched transaction ID (if available), and the count of attachments.
+"""
+
+get_automatch_status_prompt = """
+This tool retrieves the status of a bulk receipt automatch job in Extend.
+It takes the following argument:
+- job_id (str): The unique identifier of the automatch job whose status is to be retrieved.
+The response is a JSON object providing the current status and details of the job, including:
+- id: The job ID.
+- tasks: A list of task objects detailing each automatch operation, such as task ID, status, receipt attachment ID, matched transaction ID (if available), and attachments count.
 """

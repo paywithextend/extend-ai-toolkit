@@ -9,6 +9,7 @@ from .utils import pop_first
 
 VALID_SCOPES = [
     'virtual_cards.read',
+    'virtual_cards.update',
     'credit_cards.read',
     'transactions.read',
     'transactions.update',
@@ -17,6 +18,7 @@ VALID_SCOPES = [
     'expense_categories.update',
     'receipt_attachments.read',
     'receipt_attachments.create',
+    'receipt_attachments.match',
 ]
 
 

@@ -3,7 +3,7 @@ import logging
 import os
 import uuid
 from datetime import datetime, timedelta
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 
 from extend import ExtendClient
 
@@ -553,6 +553,58 @@ async def create_receipt_attachment(
     except Exception as e:
         logger.error("Error creating receipt attachment: %s", e)
         raise Exception("Error creating receipt attachment: %s", e)
+
+
+# =========================
+# Receipt Capture Functions
+# =========================
+
+async def automatch_receipts(
+        extend: ExtendClient,
+        receipt_attachment_ids: List[str],
+) -> Dict:
+    """
+    Initiates an asynchronous bulk receipt automatch job.
+
+    This method triggers an asynchronous job on the server that processes the provided receipt attachment IDs.
+    The operation is non-blocking: it immediately returns a job ID and preliminary details,
+    while the matching process is performed in the background.
+
+    Args:
+        receipt_attachment_ids (List[str]): A list of receipt attachment IDs to be automatched.
+
+    Returns:
+        Dict: A dictionary representing the Bulk Receipt Automatch Response.
+    """
+    try:
+        response = await extend.receipt_capture.automatch_receipts(
+            receipt_attachment_ids=receipt_attachment_ids
+        )
+        return response
+    except Exception as e:
+        logger.error("Error initiating receipt automatch: %s", e)
+        raise Exception("Error initiating receipt automatch: %s", e)
+
+
+async def get_automatch_status(
+        extend: ExtendClient,
+        job_id: str,
+) -> Dict:
+    """
+    Retrieves the status of a bulk receipt capture automatch job.
+
+    Args:
+        job_id (str): The ID of the automatch job whose status is to be retrieved.
+
+    Returns:
+        Dict: A dictionary representing the current Bulk Receipt Automatch Response.
+    """
+    try:
+        response = await extend.receipt_capture.get_automatch_status(job_id=job_id)
+        return response
+    except Exception as e:
+        logger.error("Error getting automatch status: %s", e)
+        raise Exception("Error getting automatch status: %s", e)
 
 
 # Optional: Cleanup function to remove expired selections

@@ -363,11 +363,27 @@ class UpdateExpenseCategoryLabel(BaseModel):
 
 class CreateReceiptAttachmentSchema(BaseModel):
     """Schema for the `create_receipt_attachment` operation."""
-    transaction_id: str = Field(
-        ...,
-        description="The unique identifier of the transaction to attach the receipt to."
-    )
     file_path: str = Field(
         ...,
         description="File path for the receipt attachment to be uploaded via multipart form data."
+    )
+    transaction_id: Optional[str] = Field(
+        ...,
+        description="The optional unique identifier of the transaction to attach the receipt to."
+    )
+
+
+class AutomatchReceiptsSchema(BaseModel):
+    """Schema for the `automatch_receipts` operation."""
+    receipt_attachment_ids: List[str] = Field(
+        ...,
+        description="A list of receipt attachment IDs to be automatched."
+    )
+
+
+class GetAutomatchStatusSchema(BaseModel):
+    """Schema for the `get_automatch_status` operation."""
+    job_id: str = Field(
+        ...,
+        description="The unique identifier of the automatch job whose status is to be retrieved."
     )

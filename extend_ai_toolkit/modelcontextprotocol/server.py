@@ -19,9 +19,7 @@ class ExtendMCPServer(FastMCP):
     def __init__(self, api_key: str, api_secret: str, configuration: Configuration):
         super().__init__(
             name="Extend",
-            version="0.1.0",
-            host="127.0.0.1",
-            port=8000
+            version="1.0.0"
         )
 
         self._extend = ExtendAPI(
@@ -70,6 +68,10 @@ class ExtendMCPServer(FastMCP):
                     fn = functions.update_transaction_expense_data
                 case ExtendAPITools.CREATE_RECEIPT_ATTACHMENT.value:
                     fn = functions.create_receipt_attachment
+                case ExtendAPITools.AUTOMATCH_RECEIPTS.value:
+                    fn = functions.automatch_receipts
+                case ExtendAPITools.GET_AUTOMATCH_STATUS.value:
+                    fn = functions.get_automatch_status
                 case _:
                     raise ValueError(f"Invalid tool {tool}")
 

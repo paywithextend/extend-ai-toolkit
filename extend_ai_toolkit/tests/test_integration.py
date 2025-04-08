@@ -2,7 +2,6 @@ import asyncio
 import os
 import tempfile
 import uuid
-from datetime import datetime, timedelta
 
 import pytest
 from dotenv import load_dotenv
@@ -11,9 +10,6 @@ from extend import ExtendClient
 from extend_ai_toolkit.shared.functions import (
     get_virtual_cards,
     get_credit_cards,
-    get_virtual_card_detail,
-    cancel_virtual_card,
-    close_virtual_card,
     create_expense_category,
     create_expense_category_label,
     get_expense_category_labels,
@@ -23,7 +19,7 @@ from extend_ai_toolkit.shared.functions import (
     update_expense_category,
     get_transactions,
     update_transaction_expense_data,
-    create_receipt_attachment
+    create_receipt_attachment, automatch_receipts
 )
 
 load_dotenv()
@@ -418,6 +414,21 @@ class TestReceiptAttachments:
             # Check for common fields in a successful response
             for field in ["id", "transactionId", "contentType", "urls", "createdAt", "uploadType"]:
                 assert field in response, f"Missing expected field: {field}"
+
+            # Initiate an automatch job
+            automatch_response = await automatch_receipts(
+                extend=extend,
+                receipt_attachment_ids=[response["id"]]
+            )
+            assert "id" in automatch_response, "Automatch response should include a job id"
+            assert "tasks" in automatch_response, "Automatch response should include tasks"
+
+            job_id = automatch_response["id"]
+            # Retrieve the automatch job status using the new endpoint
+            status_response = await extend.receipt_capture.get_automatch_status(job_id)
+            assert "id" in status_response, "Status response should include a job id"
+            assert status_response["id"] == job_id, "Job id should match the one returned during automatch"
+            assert "tasks" in status_response, "Status response should include tasks"
 
         finally:
             # Clean up the temporary file
