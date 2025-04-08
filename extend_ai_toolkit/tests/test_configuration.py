@@ -8,8 +8,7 @@ import pytest
 from extend_ai_toolkit.shared import (
     Configuration,
     Product,
-    Actions,
-    Scope,
+    Actions, tools,
 )
 
 
@@ -37,24 +36,26 @@ class Tool:
 def test_all_tools_configuration():
     config = Configuration.all_tools()
     assert config.scope is not None
-    assert len(config.scope) == 5
-    # Check that each default scope is set as expected.
+
+    # Build a mapping of product -> set of expected actions from tools
+    expected_scopes = {}
+
+    for tool in tools:
+        for scope in tool.required_scope:
+            product = scope.type
+            if product not in expected_scopes:
+                expected_scopes[product] = set()
+            expected_scopes[product].update({k for k, v in scope.actions.items() if v})
+
+    # Validate the number of configured scopes
+    assert len(config.scope) == len(expected_scopes)
+
+    # Validate each product and its actions are in the config
     for pp in config.scope:
-        if pp.type == Product.CREDIT_CARDS:
-            assert pp.actions.get("read") is True
-        elif pp.type == Product.VIRTUAL_CARDS:
-            assert pp.actions.get("read") is True
-        elif pp.type == Product.TRANSACTIONS:
-            assert pp.actions.get("read") is True
-        elif pp.type == Product.EXPENSE_CATEGORIES:
-            assert pp.actions.get("read") is True
-            assert pp.actions.get("create") is True
-            assert pp.actions.get("update") is True
-        elif pp.type == Product.RECEIPT_ATTACHMENTS:
-            assert pp.actions.get("read") is True
-            assert pp.actions.get("create") is True
-        else:
-            raise ValueError(f"Unexpected product type in configuration: {pp.type}")
+        expected_actions = expected_scopes.get(pp.type)
+        assert expected_actions is not None, f"Unexpected product in config: {pp.type}"
+        for action in expected_actions:
+            assert pp.actions.get(action) is True, f"{pp.type}.{action} should be True"
 
 
 # Test is_tool_in_scope returns True when tool requirements match configuration.

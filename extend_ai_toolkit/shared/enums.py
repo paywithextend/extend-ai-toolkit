@@ -21,12 +21,15 @@ class ExtendAPITools(Enum):
     PROPOSE_EXPENSE_CATEGORY_LABEL = "propose_expense_category_label"
     CONFIRM_EXPENSE_CATEGORY_LABEL = "confirm_expense_category_label"
     CREATE_RECEIPT_ATTACHMENT = "create_receipt_attachment"
+    AUTOMATCH_RECEIPTS = "automatch_receipts"
+    GET_AUTOMATCH_STATUS = "get_automatch_status"
 
 
 class Action(Enum):
     CREATE = "create"
     READ = "read"
     UPDATE = "update"
+    MATCH = "match"
 
 
 class Agent(Enum):

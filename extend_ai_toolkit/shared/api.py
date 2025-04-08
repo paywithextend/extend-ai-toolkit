@@ -83,5 +83,11 @@ class ExtendAPI:
             case ExtendAPITools.CREATE_RECEIPT_ATTACHMENT.value:
                 output = await create_receipt_attachment(self.extend, *args, **kwargs)
                 return json.dumps(output)
+            case ExtendAPITools.AUTOMATCH_RECEIPTS.value:
+                output = await automatch_receipts(self.extend, *args, **kwargs)
+                return json.dumps(output)
+            case ExtendAPITools.GET_AUTOMATCH_STATUS.value:
+                output = await get_automatch_status(self.extend, *args, **kwargs)
+                return json.dumps(output)
             case _:
                 raise ValueError(f"Invalid tool {tool}")
