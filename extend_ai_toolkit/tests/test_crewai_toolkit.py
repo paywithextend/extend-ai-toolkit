@@ -28,7 +28,7 @@ def mock_extend_api():
     with patch('extend_ai_toolkit.shared.agent_toolkit.ExtendAPI') as mock_api_class:
         mock_api_instance = Mock(spec=ExtendAPI)
         mock_api_instance.run = AsyncMock()
-        mock_api_class.return_value = mock_api_instance
+        mock_api_class.default_instance.return_value = mock_api_instance
         yield mock_api_class, mock_api_instance
 
 
@@ -65,23 +65,13 @@ def mock_configuration():
 @pytest.fixture
 def toolkit(mock_extend_api, mock_configuration):
     """Fixture that creates an ExtendCrewAIToolkit instance with mocks"""
-    mock_api_class, mock_api_instance = mock_extend_api
+    _, mock_api_instance = mock_extend_api
     toolkit = ExtendCrewAIToolkit(
-        api_key="test_api_key",
-        api_secret="test_api_secret",
+        extend_api=mock_api_instance,
         configuration=mock_configuration
     )
+    
     return toolkit
-
-
-def test_init_creates_extend_api(toolkit, mock_extend_api):
-    """Test that ExtendAPI is initialized with correct credentials"""
-    mock_api_class, _ = mock_extend_api
-    mock_api_class.assert_called_once_with(
-        api_key="test_api_key",
-        api_secret="test_api_secret"
-    )
-
 
 def test_get_tools_returns_correct_tools(toolkit, mock_configuration):
     """Test that get_tools returns the correct set of tools"""

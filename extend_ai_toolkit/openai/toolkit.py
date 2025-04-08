@@ -15,14 +15,19 @@ class ExtendOpenAIToolkit(AgentToolkit[FunctionTool]):
 
     def __init__(
             self,
-            api_key: str,
-            api_secret: str,
+            extend_api: ExtendAPI,
             configuration: Optional[Configuration]
     ):
         super().__init__(
-            api_key=api_key,
-            api_secret=api_secret,
+            extend_api=extend_api,
             configuration=configuration or Configuration.all_tools()
+        )
+
+    @classmethod
+    def default_instance(cls, api_key: str, api_secret: str, configuration: Configuration) -> "ExtendOpenAIToolkit":
+        return cls(
+            extend_api=ExtendAPI.default_instance(api_key, api_secret),
+            configuration=configuration
         )
 
     def tool_for_agent(self, api: ExtendAPI, tool: Tool) -> FunctionTool:

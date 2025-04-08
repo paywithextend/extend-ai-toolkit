@@ -148,7 +148,7 @@ from extend_ai_toolkit.openai.toolkit import ExtendOpenAIToolkit
 from extend_ai_toolkit.shared import Configuration, Scope, Product, Actions
 
 # Initialize the OpenAI toolkit
-extend_openai_toolkit = ExtendOpenAIToolkit(
+extend_openai_toolkit = ExtendOpenAIToolkit.default_instance(
     api_key=os.environ.get("EXTEND_API_KEY"),
     api_secret=os.environ.get("EXTEND_API_SECRET"),
     configuration=Configuration(
@@ -178,7 +178,7 @@ from extend_ai_toolkit.langchain.toolkit import ExtendLangChainToolkit
 from extend_ai_toolkit.shared import Configuration, Scope, Product, Actions
 
 # Initialize the LangChain toolkit
-extend_langchain_toolkit = ExtendLangChainToolkit(
+extend_langchain_toolkit = ExtendLangChainToolkit.default_instance(
     api_key=os.environ.get("EXTEND_API_KEY"),
     api_secret=os.environ.get("EXTEND_API_SECRET"),
     configuration=Configuration(
@@ -208,7 +208,7 @@ from extend_ai_toolkit.crewai.toolkit import ExtendCrewAIToolkit
 from extend_ai_toolkit.shared import Configuration, Scope, Product, Actions
 
 # Initialize the CrewAI toolkit
-toolkit = ExtendCrewAIToolkit(
+toolkit = ExtendCrewAIToolkit.default_instance(
     api_key=os.environ.get("EXTEND_API_KEY"),
     api_secret=os.environ.get("EXTEND_API_SECRET"),
     configuration=Configuration(

@@ -16,22 +16,23 @@ class AgentToolkit(Generic[ToolType]):
 
     def __init__(
             self,
-            api_key: str,
-            api_secret: str,
+            extend_api: ExtendAPI,
             configuration: Configuration,
     ):
         super().__init__()
-
-        extend_api = ExtendAPI(
-            api_key=api_key,
-            api_secret=api_secret
-        )
 
         self._tools = [
             self.tool_for_agent(extend_api, tool)
             for tool in configuration.allowed_tools(tools)
         ]
 
+    @classmethod
+    def default_instance(cls, api_key: str, api_secret: str, configuration: Configuration) -> "AgentToolkit":
+        return cls(
+            extend_api=ExtendAPI.default_instance(api_key, api_secret),
+            configuration=configuration
+        )
+    
     @abstractmethod
     def tool_for_agent(self, api: ExtendAPI, tool: Tool) -> ToolType:
         raise NotImplementedError("Subclasses must implement tool_for_agent()")
