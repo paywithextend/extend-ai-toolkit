@@ -47,7 +47,7 @@ def build_server():
     selected_tools = options.tools
     configuration = Configuration.from_tool_str(selected_tools)
 
-    return ExtendMCPServer(
+    return ExtendMCPServer.default_instance(
         api_key=options.api_key,
         api_secret=options.api_secret,
         configuration=configuration

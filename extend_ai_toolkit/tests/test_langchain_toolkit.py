@@ -25,7 +25,7 @@ def mock_extend_api():
     with patch('extend_ai_toolkit.shared.agent_toolkit.ExtendAPI') as mock_api_class:
         mock_api_instance = Mock(spec=ExtendAPI)
         mock_api_instance.run = AsyncMock()
-        mock_api_class.return_value = mock_api_instance
+        mock_api_class.default_instance.return_value = mock_api_instance
         yield mock_api_class, mock_api_instance
 
 
@@ -63,21 +63,10 @@ def toolkit(mock_extend_api, mock_configuration):
     """Fixture that creates an ExtendLangChainToolkit instance with mocks"""
     mock_api_class, mock_api_instance = mock_extend_api
     toolkit = ExtendLangChainToolkit(
-        api_key="test_api_key",
-        api_secret="test_api_secret",
+        extend_api=mock_api_instance,
         configuration=mock_configuration
     )
     return toolkit
-
-
-def test_init_creates_extend_api(toolkit, mock_extend_api):
-    """Test that ExtendAPI is initialized with correct credentials"""
-    mock_api_class, _ = mock_extend_api
-    mock_api_class.assert_called_once_with(
-        api_key="test_api_key",
-        api_secret="test_api_secret"
-    )
-
 
 def test_get_tools_returns_correct_tools(toolkit, mock_configuration):
     """Test that get_tools returns the correct set of tools"""
@@ -87,9 +76,9 @@ def test_get_tools_returns_correct_tools(toolkit, mock_configuration):
     assert len(tools) == 2
 
     # Verify tool details
-    assert tools[0].name == "Get Virtual Cards"
+    assert tools[0].name == "get_virtual_cards"
     assert tools[0].description == "Get all virtual cards"
-    assert tools[1].name == "Get Virtual Card Details"
+    assert tools[1].name == "get_virtual_card_detail"
     assert tools[1].description == "Get details of a virtual card"
 
 

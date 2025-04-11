@@ -15,13 +15,18 @@ class ExtendAPI:
 
     def __init__(
             self,
-            api_key: str,
-            api_secret: str,
+            extend: ExtendClient,
     ):
 
-        self.extend = ExtendClient(
-            api_key=api_key,
-            api_secret=api_secret
+        self.extend = extend
+    
+    @classmethod
+    def default_instance(cls, api_key: str, api_secret: str) -> "ExtendAPI":
+        return cls(
+            extend=ExtendClient(
+                api_key=api_key,
+                api_secret=api_secret
+            )
         )
 
     async def run(self, tool: str, *args, **kwargs) -> str:
@@ -88,6 +93,9 @@ class ExtendAPI:
                 return json.dumps(output)
             case ExtendAPITools.GET_AUTOMATCH_STATUS.value:
                 output = await get_automatch_status(self.extend, *args, **kwargs)
+                return json.dumps(output)
+            case ExtendAPITools.SEND_RECEIPT_REMINDER.value:
+                output = await send_receipt_reminder(self.extend, *args, **kwargs)
                 return json.dumps(output)
             case _:
                 raise ValueError(f"Invalid tool {tool}")

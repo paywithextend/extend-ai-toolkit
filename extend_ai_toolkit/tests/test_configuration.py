@@ -8,7 +8,8 @@ import pytest
 from extend_ai_toolkit.shared import (
     Configuration,
     Product,
-    Actions, tools,
+    Actions, 
+    tools,
 )
 
 

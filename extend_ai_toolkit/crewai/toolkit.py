@@ -16,16 +16,21 @@ class ExtendCrewAIToolkit(AgentToolkit[BaseTool]):
 
     def __init__(
         self,
-        api_key: str,
-        api_secret: str,
+        extend_api: ExtendAPI,
         configuration: Optional[Configuration] = None
     ):
         super().__init__(
-            api_key=api_key,
-            api_secret=api_secret,
+            extend_api=extend_api,
             configuration=configuration
         )
         self._llm = None
+        
+    @classmethod
+    def default_instance(cls, api_key: str, api_secret: str, configuration: Configuration) -> "ExtendCrewAIToolkit":
+        return cls(
+            extend_api=ExtendAPI.default_instance(api_key, api_secret),
+            configuration=configuration
+        )
 
     def configure_llm(
         self,

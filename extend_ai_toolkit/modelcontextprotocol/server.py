@@ -17,16 +17,13 @@ logger.setLevel(logging.INFO)
 
 
 class ExtendMCPServer(FastMCP):
-    def __init__(self, api_key: str, api_secret: str, configuration: Configuration):
+    def __init__(self, extend_api: ExtendAPI, configuration: Configuration):
         super().__init__(
             name="Extend MCP Server",
             version=_version
         )
 
-        self._extend = ExtendAPI(
-            api_key=api_key,
-            api_secret=api_secret
-        )
+        self._extend = extend_api
 
         for tool in configuration.allowed_tools(tools):
             fn: Any = None
@@ -73,6 +70,8 @@ class ExtendMCPServer(FastMCP):
                     fn = functions.automatch_receipts
                 case ExtendAPITools.GET_AUTOMATCH_STATUS.value:
                     fn = functions.get_automatch_status
+                case ExtendAPITools.SEND_RECEIPT_REMINDER.value:
+                    fn = functions.send_receipt_reminder
                 case _:
                     raise ValueError(f"Invalid tool {tool}")
 
@@ -81,6 +80,10 @@ class ExtendMCPServer(FastMCP):
                 tool.name,
                 tool.description
             )
+            
+    @classmethod
+    def default_instance(cls, api_key: str, api_secret: str, configuration: Configuration):
+        return cls(extend_api=ExtendAPI.default_instance(api_key, api_secret), configuration=configuration)
 
     def _handle_tool_request(self, tool: Tool, fn: AnyFunction):
         async def resource_handler(*args, **kwargs):
