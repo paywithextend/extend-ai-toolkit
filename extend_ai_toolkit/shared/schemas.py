@@ -93,14 +93,18 @@ class GetTransactions(BaseModel):
         None,
         description="Maximum transaction amount in cents."
     )
+    receipt_missing: Optional[bool] = Field(
+        None,
+        description="Filter transactions by whether they are missing a receipt."
+    )
     search_term: Optional[str] = Field(
         None,
         description="Filter transactions by search term."
     )
     sort_field: Optional[str] = Field(
         None,
-        description="Field to sort transactions by."
-    )
+        description="Field to sort by, with optional direction. Use 'recipientName', 'merchantName', 'amount', 'date' for ASC. Use '-recipientName', '-merchantName', '-amount', '-date' for DESC."
+    )    
 
 
 class GetTransactionDetail(BaseModel):
@@ -386,4 +390,12 @@ class GetAutomatchStatusSchema(BaseModel):
     job_id: str = Field(
         ...,
         description="The unique identifier of the automatch job whose status is to be retrieved."
+    )
+
+
+class SendReceiptReminderSchema(BaseModel):
+    """Schema for the `send_receipt_reminder` operation."""
+    transaction_id: str = Field(
+        ...,
+        description="The unique identifier of the transaction to send a receipt reminder for."
     )

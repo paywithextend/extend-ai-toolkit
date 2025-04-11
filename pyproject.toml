@@ -21,7 +21,7 @@ dependencies = [
     "starlette>=0.40.0,<0.46.0",
     "openai>=1.66.3,<2.0.0",
     "openai-agents==0.0.4",
-    "paywithextend==1.1.0",
+    "paywithextend==1.2.1",
 ]
 
 [project.urls]

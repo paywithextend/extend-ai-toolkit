@@ -68,6 +68,7 @@ It takes the following arguments:
 - virtual_card_id (Optional[str]): Filter by a specific virtual card ID.
 - min_amount_cents (Optional[int]): Minimum transaction amount in cents.
 - max_amount_cents (Optional[int]): Maximum transaction amount in cents.
+- receipt_missing (Optional[bool]): Filter transactions by whether they are missing a receipt
 - search_term (Optional[str]): A search term to filter transactions.
 - sort_field (Optional[str]): Field to sort by, with optional direction
                         Use "recipientName", "merchantName", "amount", "date" for ASC
@@ -271,4 +272,14 @@ It takes the following argument:
 The response is a JSON object providing the current status and details of the job, including:
 - id: The job ID.
 - tasks: A list of task objects detailing each automatch operation, such as task ID, status, receipt attachment ID, matched transaction ID (if available), and attachments count.
+"""
+
+send_receipt_reminder_prompt = """
+This tool sends a receipt reminder for a specific transaction in Extend.
+It takes the following argument:
+- transaction_id (str): The unique identifier of the transaction to send a receipt reminder for.
+
+The response is a 200 status code indicating that the reminder was sent successfully.
+If you receive a 429 response, it indicates that the user has already received a reminder for this transaction and only one can be sent out every 24 hours.
+This is useful for following up on missing receipts or encouraging users to submit receipts for transactions that require them.
 """
