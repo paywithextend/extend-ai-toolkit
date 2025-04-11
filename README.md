@@ -71,6 +71,7 @@ The toolkit provides a comprehensive set of tools organized by functionality:
 - `create_receipt_attachment`: Upload a receipt (and optionally attach to a transaction)
 - `automatch_receipts`: Initiate async job to automatch uploaded receipts to transactions
 - `get_automatch_status`: Get the status of an automatch job
+- `send_receipt_reminder`: Send a reminder (via email) for a transaction missing a receipt 
 
 ## Usage Examples
 
