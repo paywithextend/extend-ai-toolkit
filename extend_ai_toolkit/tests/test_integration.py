@@ -3,6 +3,7 @@ import os
 import tempfile
 import uuid
 
+import httpx
 import pytest
 from dotenv import load_dotenv
 from extend import ExtendClient
@@ -19,7 +20,7 @@ from extend_ai_toolkit.shared.functions import (
     update_expense_category,
     get_transactions,
     update_transaction_expense_data,
-    create_receipt_attachment, automatch_receipts
+    create_receipt_attachment, automatch_receipts, send_receipt_reminder
 )
 
 load_dotenv()
@@ -433,6 +434,31 @@ class TestReceiptAttachments:
         finally:
             # Clean up the temporary file
             os.remove(tmp_name)
+
+    @pytest.mark.asyncio
+    async def test_send_receipt_reminder(self, extend):
+        """
+        Test sending a receipt reminder for a transaction.
+        """
+        # Retrieve a transaction to send a reminder for
+        transactions_response = await get_transactions(extend, page=0, per_page=10, receipt_missing=True)
+        if not transactions_response.get("report", {}).get("transactions"):
+            pytest.skip("No transactions available to send receipt reminder for")
+        transaction_id = transactions_response["report"]["transactions"][0]["id"]
+
+        try:
+            # Send receipt reminder
+            result = await send_receipt_reminder(extend, transaction_id)
+            # The call should succeed and return None
+            assert result is None
+        except Exception as exc:
+            # With exception chaining, check the cause.
+            original_error = exc.__cause__
+            assert original_error is not None, "Expected a chained exception"
+            if isinstance(original_error, httpx.HTTPStatusError):
+                assert original_error.response.status_code == 429
+            else:
+                raise AssertionError("Expected httpx.HTTPStatusError as the cause") from exc
 
 
 def test_environment_variables():
