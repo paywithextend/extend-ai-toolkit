@@ -23,13 +23,13 @@ class ExtendAPITools(Enum):
     CREATE_RECEIPT_ATTACHMENT = "create_receipt_attachment"
     AUTOMATCH_RECEIPTS = "automatch_receipts"
     GET_AUTOMATCH_STATUS = "get_automatch_status"
+    SEND_RECEIPT_REMINDER = "send_receipt_reminder"
 
 
 class Action(Enum):
     CREATE = "create"
     READ = "read"
     UPDATE = "update"
-    MATCH = "match"
 
 
 class Agent(Enum):

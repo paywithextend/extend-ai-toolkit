@@ -102,6 +102,7 @@ async def get_transactions(
         virtual_card_id: Optional[str] = None,
         min_amount_cents: Optional[int] = None,
         max_amount_cents: Optional[int] = None,
+        receipt_missing: Optional[bool] = None,
         search_term: Optional[str] = None,
         sort_field: Optional[str] = None,
 ) -> Dict:
@@ -117,10 +118,11 @@ async def get_transactions(
         virtual_card_id (Optional[str]): Filter by specific virtual card
         min_amount_cents (Optional[int]): Minimum amount in cents
         max_amount_cents (Optional[int]): Maximum amount in cents
+        receipt_missing (Optional[bool]): Filter transactions by whether they are missing a receipt
         search_term (Optional[str]): Filter transactions by search term (e.g., "Subscription")
         sort_field (Optional[str]): Field to sort by, with optional direction
                                     Use "recipientName", "merchantName", "amount", "date" for ASC
-                                    Use "-recipientName", "-merchantName", "-amount", "-date" for DESC
+                                    Use "-recipientName", "-merchantName", "-amount", "-date" for DESC        
 
     """
     try:
@@ -134,7 +136,8 @@ async def get_transactions(
             min_amount_cents=min_amount_cents,
             max_amount_cents=max_amount_cents,
             search_term=search_term,
-            sort_field=sort_field
+            sort_field=sort_field,
+            receipt_missing=receipt_missing,
         )
         return response
 
@@ -605,6 +608,28 @@ async def get_automatch_status(
     except Exception as e:
         logger.error("Error getting automatch status: %s", e)
         raise Exception("Error getting automatch status: %s", e)
+
+
+async def send_receipt_reminder(
+        extend: ExtendClient,
+        transaction_id: str,
+) -> Dict:
+    """
+    Send a transaction-specific receipt reminder.
+
+    Args:
+        extend: The Extend client instance
+        transaction_id (str): The unique identifier of the transaction.
+
+    Returns:
+        Dict: Response from the API indicating the reminder was sent successfully.
+    """
+    try:
+        response = await extend.transactions.send_receipt_reminder(transaction_id)
+        return response
+    except Exception as e:
+        logger.error("Error sending receipt reminder: %s", e)
+        raise Exception(f"Error sending receipt reminder: {e}") from e
 
 
 # Optional: Cleanup function to remove expired selections

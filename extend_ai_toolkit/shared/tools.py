@@ -20,7 +20,10 @@ from .prompts import (
     update_expense_category_prompt,
     get_credit_card_detail_prompt,
     update_transaction_expense_data_prompt,
-    create_receipt_attachment_prompt, get_automatch_status_prompt, automatch_receipts_prompt,
+    create_receipt_attachment_prompt,
+    get_automatch_status_prompt,
+    automatch_receipts_prompt,
+    send_receipt_reminder_prompt,
 )
 from .schemas import (
     GetVirtualCards,
@@ -39,7 +42,9 @@ from .schemas import (
     GetCreditCardDetail,
     UpdateTransactionExpenseData,
     GetAutomatchStatusSchema,
-    AutomatchReceiptsSchema, CreateReceiptAttachmentSchema,
+    AutomatchReceiptsSchema,
+    CreateReceiptAttachmentSchema,
+    SendReceiptReminderSchema,
 )
 
 
@@ -257,7 +262,11 @@ tools: List[Tool] = [
         required_scope=[
             Scope(
                 type=Product.RECEIPT_ATTACHMENTS,
-                actions={"read": True, "match": True, }
+                actions={"read": True}
+            ),
+            Scope(
+                type=Product.TRANSACTIONS,
+                actions={"read": True, "update": True}
             )
         ],
     ),
@@ -268,6 +277,21 @@ tools: List[Tool] = [
         required_scope=[
             Scope(
                 type=Product.RECEIPT_ATTACHMENTS,
+                actions={"read": True}
+            )
+        ],
+    ),
+    Tool(
+        method=ExtendAPITools.SEND_RECEIPT_REMINDER,
+        description=send_receipt_reminder_prompt,
+        args_schema=SendReceiptReminderSchema,
+        required_scope=[
+            Scope(
+                type=Product.RECEIPT_ATTACHMENTS,
+                actions={"read": True}
+            ),
+            Scope(
+                type=Product.TRANSACTIONS,
                 actions={"read": True}
             )
         ],

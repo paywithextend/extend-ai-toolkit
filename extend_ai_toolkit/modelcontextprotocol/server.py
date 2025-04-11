@@ -70,6 +70,8 @@ class ExtendMCPServer(FastMCP):
                     fn = functions.automatch_receipts
                 case ExtendAPITools.GET_AUTOMATCH_STATUS.value:
                     fn = functions.get_automatch_status
+                case ExtendAPITools.SEND_RECEIPT_REMINDER.value:
+                    fn = functions.send_receipt_reminder
                 case _:
                     raise ValueError(f"Invalid tool {tool}")
 

@@ -94,5 +94,8 @@ class ExtendAPI:
             case ExtendAPITools.GET_AUTOMATCH_STATUS.value:
                 output = await get_automatch_status(self.extend, *args, **kwargs)
                 return json.dumps(output)
+            case ExtendAPITools.SEND_RECEIPT_REMINDER.value:
+                output = await send_receipt_reminder(self.extend, *args, **kwargs)
+                return json.dumps(output)
             case _:
                 raise ValueError(f"Invalid tool {tool}")
