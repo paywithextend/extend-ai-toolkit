@@ -154,6 +154,7 @@ def format_transactions_list(response: Dict) -> str:
         result += f"  Status: {status}\n"
         # Date can be under authedAt or clearedAt; skip if neither is provided
         txn_date = txn.get('authedAt', txn.get('clearedAt'))
+        result += add_line("Date", txn_date)
         
         # Optional fields – add only if they have a valid value
         result += add_line("VCN ID", txn.get('virtualCardId'))
