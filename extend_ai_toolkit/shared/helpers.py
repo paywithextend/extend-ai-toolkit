@@ -3,6 +3,11 @@ from typing import Dict
 
 
 # Helper functions for formatting responses
+def add_line(label, value):
+    """Return a formatted line only if value is not None or 'N/A'."""
+    if value is not None and value != "N/A":
+        return f"  {label}: {value}\n"
+    return ""
 
 def format_virtual_cards_list(response: Dict) -> str:
     """Format the virtual cards list response"""
@@ -138,38 +143,38 @@ def format_transactions_list(response: Dict) -> str:
     result = f"Recent Transactions (Page {current_page} of {total_pages}, {total_count} total):\n\n"
 
     for txn in transactions:
-        amount = txn.get('clearingBillingAmountCents', txn.get('authBillingAmountCents', 0))
-        result += (
-            f"- ID: {txn['id']}\n"
-            f"  Merchant: {txn.get('merchantName', 'N/A')}\n"
-            f"  Amount: ${amount / 100:.2f}\n"
-            f"  Status: {txn['status']}\n"
-            f"  Date: {txn.get('authedAt', txn.get('clearedAt', 'N/A'))}\n"
-            f"  Credit Card ID: {txn.get('creditCardId', 'N/A')}\n"
-            f"  Credit Card Name: {txn.get('creditCardName', 'N/A')}\n"
-            f"  Virtual Card ID: {txn.get('virtualCardId', 'N/A')}\n"
-            f"  Virtual Card Name: {txn.get('virtualCardDisplayName', 'N/A')}\n"
-            f"  Virtual Card Last 4: {txn.get('last4', 'N/A')}\n"
-            f"  Cardholder Name: {txn.get('cardholderName', 'N/A')}\n"
-            f"  Cardholder Email: {txn.get('cardholderEmail', 'N/A')}\n"
-            f"  Recipient Name: {txn.get('recipientName', 'N/A')}\n"
-            f"  Recipient Email: {txn.get('recipientEmail', 'N/A')}\n"
-            f"  Approval Code: {txn.get('approvalCode', 'N/A')}\n"
-            f"  Merchant Name: {txn.get('merchantName', 'N/A')}\n"
-            f"  Merchant Category: {txn.get('mccDescription', 'N/A')}\n"
-            f"  Merchant Category Code: {txn.get('mcc', 'N/A')}\n"
-            f"  Merchant City: {txn.get('merchantCity', 'N/A')}\n"
-            f"  Merchant State: {txn.get('merchantState', 'N/A')}\n"
-            f"  Merchant Country: {txn.get('merchantCountry', 'N/A')}\n"
-            f"  Currency: {txn.get('currency', 'USD')}\n"
-            f"  Created At: {txn.get('createdAt', 'N/A')}\n"
-            f"  Description: {txn.get('description', 'N/A')}\n"
-            f"  Notes: {txn.get('notes', 'N/A')}\n"
-            f"  Review Status: {txn.get('reviewStatus', 'N/A')}\n"
-            f"  Receipt Required: {txn.get('receiptRequired', 'false')}\n"
-            f"  Receipt Attachments Count: {txn.get('attachmentsCount', 'N/A')}\n"
-            f"  Synced to ERP: {True if txn.get('connectedPlatforms') and len(txn.get('connectedPlatforms')) > 0 else False}\n"
-        )
+        # Always include these required fields
+        txn_id = txn.get('id')
+        amount_cents = txn.get('clearingBillingAmountCents', txn.get('authBillingAmountCents', 0))
+        status = txn.get('status')
+        
+        # Start the transaction entry
+        result += f"- ID: {txn_id}\n"
+        result += f"  Amount: ${amount_cents / 100:.2f}\n"
+        result += f"  Status: {status}\n"
+        # Date can be under authedAt or clearedAt; skip if neither is provided
+        txn_date = txn.get('authedAt', txn.get('clearedAt'))
+        
+        # Optional fields – add only if they have a valid value
+        result += add_line("VCN ID", txn.get('virtualCardId'))
+        result += add_line("VCN Name", txn.get('virtualCardDisplayName'))
+        result += add_line("Cardholder Name", txn.get('cardholderName'))
+        result += add_line("Recipient Name", txn.get('recipientName'))
+        result += add_line("Merchant", txn.get('merchantName'))
+        result += add_line("MCC", txn.get('mccDescription'))
+        result += add_line("Notes", txn.get('notes'))
+        result += add_line("Review Status", txn.get('reviewStatus'))
+        result += add_line("Receipt Required", txn.get('receiptRequired'))
+        result += add_line("Receipt Attachments Count", txn.get('attachmentsCount'))
+        
+        # For fields like connectedPlatforms that require some processing,
+        # compute the value first
+        synced_to_erp = True if txn.get('connectedPlatforms') and len(txn.get('connectedPlatforms')) > 0 else False
+        result += add_line("Synced to ERP", synced_to_erp)
+        
+        # Optionally add a blank line or separator between transactions
+        result += "\n"
+
     if current_page < total_pages:
         result += f"\nThere are more transactions available. Use page parameter to view next page."
 
