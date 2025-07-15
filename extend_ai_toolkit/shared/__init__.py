@@ -4,6 +4,7 @@ from .api import ExtendAPI
 from .configuration import Configuration, Product, Scope, Actions, validate_tool_spec
 from .enums import ExtendAPITools, Agent, Action
 from .interfaces import AgentToolInterface
+from .oauth_config import OAuthConfig
 from .tools import Tool, tools
 
 __all__ = [
@@ -18,6 +19,7 @@ __all__ = [
     "Scope",
     "Action",
     "Actions",
+    "OAuthConfig",
     "tools",
     "functions",
     "validate_tool_spec",

@@ -1,6 +1,6 @@
 import inspect
 import logging
-from typing import Any
+from typing import Any, Optional
 
 from mcp.server import FastMCP
 from mcp.types import AnyFunction
@@ -10,20 +10,44 @@ from extend_ai_toolkit.shared import ExtendAPI
 from extend_ai_toolkit.shared import ExtendAPITools
 from extend_ai_toolkit.shared import functions
 from extend_ai_toolkit.shared import tools, Tool
+from extend_ai_toolkit.shared.oauth_config import OAuthConfig
+from .auth.oauth_handler import OAuthHandler
+from .storage.base import TokenStore, TokenData
 from ..__version__ import __version__ as _version
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
+class UserContext:
+    """User context for OAuth authenticated requests."""
+    
+    def __init__(self, token_data: TokenData):
+        self.user_email = token_data.user_email
+        self.token = token_data.token
+        self.extend_api_key = token_data.extend_api_key
+        self.extend_api_secret = token_data.extend_api_secret
+    
+    def create_extend_api(self) -> ExtendAPI:
+        """Create user-specific ExtendAPI instance."""
+        return ExtendAPI.default_instance(
+            api_key=self.extend_api_key,
+            api_secret=self.extend_api_secret
+        )
+
+
 class ExtendMCPServer(FastMCP):
-    def __init__(self, extend_api: ExtendAPI, configuration: Configuration):
+    def __init__(self, extend_api: Optional[ExtendAPI], configuration: Configuration, 
+                 oauth_handler: Optional[OAuthHandler] = None):
         super().__init__(
             name="Extend MCP Server",
             version=_version
         )
 
         self._extend = extend_api
+        self.oauth_handler = oauth_handler
+        self.configuration = configuration
+        self._current_user_context: Optional[UserContext] = None
 
         for tool in configuration.allowed_tools(tools):
             fn: Any = None
@@ -83,19 +107,106 @@ class ExtendMCPServer(FastMCP):
             
     @classmethod
     def default_instance(cls, api_key: str, api_secret: str, configuration: Configuration):
-        return cls(extend_api=ExtendAPI.default_instance(api_key, api_secret), configuration=configuration)
+        """Create MCP server instance for API key authentication mode."""
+        return cls(
+            extend_api=ExtendAPI.default_instance(api_key, api_secret), 
+            configuration=configuration,
+            oauth_handler=None
+        )
+    
+    @classmethod
+    def oauth_instance(cls, oauth_config: OAuthConfig, configuration: Configuration):
+        """Create MCP server instance for OAuth authentication mode."""
+        from .storage import TokenStore
+        
+        token_store = TokenStore(oauth_config.token_store_path)
+        oauth_handler = OAuthHandler(oauth_config, token_store)
+        
+        return cls(
+            extend_api=None,  # Will be created per-request based on user token
+            configuration=configuration,
+            oauth_handler=oauth_handler
+        )
+    
+    async def authenticate_request(self, request) -> Optional[UserContext]:
+        """Extract and validate Bearer token from request headers.
+        
+        Args:
+            request: HTTP request object with headers
+            
+        Returns:
+            UserContext if authentication successful, None otherwise
+        """
+        if not self.oauth_handler:
+            # API key mode - no per-request authentication needed
+            return None
+        
+        # Extract Authorization header
+        auth_header = getattr(request, 'headers', {}).get('authorization', '')
+        if not auth_header.startswith('Bearer '):
+            logger.debug("No Bearer token found in Authorization header")
+            return None
+        
+        # Extract token
+        token = auth_header[7:]  # Remove "Bearer " prefix
+        
+        # Validate token
+        try:
+            token_data = await self.oauth_handler.validate_bearer_token(token)
+            if token_data:
+                logger.info(f"Successfully authenticated user: {token_data.user_email}")
+                return UserContext(token_data)
+            else:
+                logger.warning("Invalid or expired Bearer token")
+                return None
+        except Exception as e:
+            logger.error(f"Error validating Bearer token: {e}")
+            return None
+    
+    def set_user_context(self, user_context: Optional[UserContext]) -> None:
+        """Set current user context for request processing."""
+        self._current_user_context = user_context
+    
+    def get_current_extend_api(self) -> ExtendAPI:
+        """Get ExtendAPI instance for current request context."""
+        if self.oauth_handler and self._current_user_context:
+            # OAuth mode - use user-specific API credentials
+            return self._current_user_context.create_extend_api()
+        elif self._extend:
+            # API key mode - use server-wide API credentials
+            return self._extend
+        else:
+            raise RuntimeError("No ExtendAPI available - server not properly configured")
 
     def _handle_tool_request(self, tool: Tool, fn: AnyFunction):
         async def resource_handler(*args, **kwargs):
-            result = await self._extend.run(tool.method.value, *args, **kwargs)
-            return {
-                "content": [
-                    {
-                        "type": "text",
-                        "text": str(result)
-                    }
-                ]
-            }
+            try:
+                # Get appropriate ExtendAPI instance (user-specific or server-wide)
+                extend_api = self.get_current_extend_api()
+                
+                # Execute tool with appropriate API credentials
+                result = await extend_api.run(tool.method.value, *args, **kwargs)
+                
+                return {
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": str(result)
+                        }
+                    ]
+                }
+            except Exception as e:
+                logger.error(f"Error executing tool {tool.name}: {e}")
+                
+                # Return error in MCP format
+                return {
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": f"Error executing tool: {str(e)}"
+                        }
+                    ]
+                }
 
         orig_sig = inspect.signature(fn)
         new_params = list(orig_sig.parameters.values())[1:]

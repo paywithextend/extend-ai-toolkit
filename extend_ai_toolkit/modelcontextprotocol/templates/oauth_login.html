@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Extend MCP Server - OAuth Login</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #333;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            margin: 20px;
+        }
+        
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .logo h1 {
+            color: #2563eb;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        
+        .logo p {
+            color: #6b7280;
+            font-size: 14px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+            color: #374151;
+            font-size: 14px;
+        }
+        
+        input[type="email"],
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+            background: #fafafa;
+        }
+        
+        input[type="email"]:focus,
+        input[type="text"]:focus,
+        input[type="password"]:focus {
+            outline: none;
+            border-color: #2563eb;
+            background: white;
+        }
+        
+        .submit-btn {
+            width: 100%;
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 14px 20px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin-top: 10px;
+        }
+        
+        .submit-btn:hover {
+            background: #1d4ed8;
+        }
+        
+        .submit-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+        
+        .help-text {
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            text-align: center;
+        }
+        
+        .help-text p {
+            color: #6b7280;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        
+        .help-text a {
+            color: #2563eb;
+            text-decoration: none;
+        }
+        
+        .help-text a:hover {
+            text-decoration: underline;
+        }
+        
+        .oauth-info {
+            background: #f3f4f6;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 25px;
+            border-left: 4px solid #2563eb;
+        }
+        
+        .oauth-info h3 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #374151;
+        }
+        
+        .oauth-info p {
+            font-size: 13px;
+            color: #6b7280;
+            margin-bottom: 4px;
+        }
+        
+        .error-banner {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        
+        @media (max-width: 480px) {
+            .container {
+                padding: 30px 20px;
+                margin: 10px;
+            }
+            
+            .logo h1 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <h1>Extend MCP</h1>
+            <p>Connect your Extend account</p>
+        </div>
+        
+        {% if error_message %}
+        <div class="error-banner">
+            {{ error_message }}
+        </div>
+        {% endif %}
+        
+        <div class="oauth-info">
+            <h3>Authorization Request</h3>
+            <p><strong>Client:</strong> {{ client_id or "MCP Client" }}</p>
+            <p><strong>Permissions:</strong> Access your Extend data via MCP</p>
+        </div>
+        
+        <form id="login-form" method="POST" action="/callback">
+            <!-- OAuth parameters (hidden) -->
+            <input type="hidden" name="client_id" value="{{ client_id or '' }}">
+            <input type="hidden" name="redirect_uri" value="{{ redirect_uri or '' }}">
+            <input type="hidden" name="code_challenge" value="{{ code_challenge or '' }}">
+            <input type="hidden" name="code_challenge_method" value="{{ code_challenge_method or 'S256' }}">
+            <input type="hidden" name="state" value="{{ state or '' }}">
+            <input type="hidden" name="scope" value="{{ scope or 'mcp' }}">
+            
+            <div class="form-group">
+                <label for="user_email">Email Address</label>
+                <input type="email" 
+                       id="user_email" 
+                       name="user_email" 
+                       placeholder="your.email@company.com" 
+                       required 
+                       autocomplete="email">
+            </div>
+            
+            <div class="form-group">
+                <label for="extend_api_key">Extend API Key</label>
+                <input type="text" 
+                       id="extend_api_key" 
+                       name="extend_api_key" 
+                       placeholder="apik_..." 
+                       required 
+                       autocomplete="off"
+                       pattern="apik_.*"
+                       title="API key must start with 'apik_'">
+            </div>
+            
+            <div class="form-group">
+                <label for="extend_api_secret">Extend API Secret</label>
+                <input type="password" 
+                       id="extend_api_secret" 
+                       name="extend_api_secret" 
+                       placeholder="Enter your API secret" 
+                       required 
+                       autocomplete="off">
+            </div>
+            
+            <button type="submit" class="submit-btn" id="submit-btn">
+                Connect & Authorize
+            </button>
+        </form>
+        
+        <div class="help-text">
+            <p>Find your API credentials in your <a href="https://app.paywithextend.com" target="_blank">Extend dashboard</a></p>
+            <p>Your credentials are used only to verify your identity and access your data.</p>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('login-form');
+            const submitBtn = document.getElementById('submit-btn');
+            const apiKeyInput = document.getElementById('extend_api_key');
+            const apiSecretInput = document.getElementById('extend_api_secret');
+            
+            // Validate API key format
+            function validateApiKey() {
+                const apiKey = apiKeyInput.value.trim();
+                if (apiKey && !apiKey.startsWith('apik_')) {
+                    apiKeyInput.setCustomValidity('API key must start with "apik_"');
+                    return false;
+                } else {
+                    apiKeyInput.setCustomValidity('');
+                    return true;
+                }
+            }
+            
+            // Real-time validation
+            apiKeyInput.addEventListener('input', validateApiKey);
+            
+            // Form submission
+            form.addEventListener('submit', function(e) {
+                if (!validateApiKey()) {
+                    e.preventDefault();
+                    apiKeyInput.focus();
+                    return false;
+                }
+                
+                // Show loading state
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Connecting...';
+                
+                // Re-enable button after 10 seconds in case of network issues
+                setTimeout(function() {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Connect & Authorize';
+                }, 10000);
+            });
+            
+            // Focus on first input
+            document.getElementById('user_email').focus();
+        });
+    </script>
+</body>
+</html>
