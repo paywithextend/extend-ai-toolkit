@@ -69,10 +69,7 @@ class Options:
             return OAuthConfig(
                 issuer=self.oauth_issuer,
                 token_store_path=self.token_store_path,
-                token_expiry_hours=self.token_expiry_hours,
-                # Storage type and DynamoDB table name will be auto-detected from environment
-                storage_type=None,
-                dynamodb_table_name=None
+                token_expiry_hours=self.token_expiry_hours
             )
         return None
 

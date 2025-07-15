@@ -117,11 +117,9 @@ class ExtendMCPServer(FastMCP):
     @classmethod
     def oauth_instance(cls, oauth_config: OAuthConfig, configuration: Configuration):
         """Create MCP server instance for OAuth authentication mode."""
-        from .storage import create_token_store
+        from .storage import TokenStore
         
-        # Create token store based on OAuth configuration
-        storage_config = oauth_config.get_storage_config()
-        token_store = create_token_store(**storage_config)
+        token_store = TokenStore(oauth_config.token_store_path)
         oauth_handler = OAuthHandler(oauth_config, token_store)
         
         return cls(

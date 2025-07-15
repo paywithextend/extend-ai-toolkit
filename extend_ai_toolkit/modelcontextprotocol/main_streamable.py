@@ -305,11 +305,7 @@ def build_server() -> Starlette:
             
             logger.info(f"OAuth server configured:")
             logger.info(f"  Issuer: {oauth_config.issuer}")
-            logger.info(f"  Storage type: {oauth_config.storage_type}")
-            if oauth_config.storage_type == 'json':
-                logger.info(f"  Token store file: {oauth_config.token_store_path}")
-            elif oauth_config.storage_type == 'dynamodb':
-                logger.info(f"  DynamoDB table: {oauth_config.dynamodb_table_name}")
+            logger.info(f"  Token store: {oauth_config.token_store_path}")
             logger.info(f"  Token expiry: {oauth_config.token_expiry_hours} hours")
             
         else:
