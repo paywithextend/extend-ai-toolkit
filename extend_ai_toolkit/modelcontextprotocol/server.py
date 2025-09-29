@@ -19,8 +19,7 @@ logger.setLevel(logging.INFO)
 class ExtendMCPServer(FastMCP):
     def __init__(self, extend_api: ExtendAPI, configuration: Configuration):
         super().__init__(
-            name="Extend MCP Server",
-            version=_version
+            name="Extend MCP Server"
         )
 
         self._extend = extend_api
@@ -80,6 +79,21 @@ class ExtendMCPServer(FastMCP):
                 tool.name,
                 tool.description
             )
+
+        # Add MCP prompt if required tools are available
+        allowed_tool_methods = [tool.method.value for tool in configuration.allowed_tools(tools)]
+
+        # Add missing receipt compliance report prompt if both required tools are available
+        if (ExtendAPITools.GET_TRANSACTIONS.value in allowed_tool_methods and
+            ExtendAPITools.SEND_RECEIPT_REMINDER.value in allowed_tool_methods):
+            from extend_ai_toolkit.shared.prompts import audit_and_remind_missing_receipts_prompt
+
+            @self.prompt()
+            def audit_and_remind_missing_receipts():
+                """
+                This prompt reports on transactions with missing receipts and sends automated reminders for them.
+                """
+                return audit_and_remind_missing_receipts_prompt
             
     @classmethod
     def default_instance(cls, api_key: str, api_secret: str, configuration: Configuration):

@@ -283,3 +283,41 @@ The response is a 200 status code indicating that the reminder was sent successf
 If you receive a 429 response, it indicates that the user has already received a reminder for this transaction and only one can be sent out every 24 hours.
 This is useful for following up on missing receipts or encouraging users to submit receipts for transactions that require them.
 """
+
+audit_and_remind_missing_receipts_prompt = """
+This prompt generates an audit of transactions missing receipts and sends automated reminders.
+
+Follow these steps:
+1. Identify all transactions that are missing receipts
+2. Generate a comprehensive report of missing receipts
+3. Send automated reminder emails to users for all missing receipts
+
+Follow this exact workflow:
+
+STEP 1: Retrieve ALL transactions missing receipts using pagination:
+a) Start with page 1, call get_transactions with these parameters:
+   - receipt_missing: true (required - only get transactions missing receipts)
+   - per_page: 100
+   - sort_field: "-date" (get most recent first)
+   - page: 1
+b) Check the response's "numberOfPages" value
+c) If numberOfPages > 1, repeat the call for pages 2, 3, etc. until all pages are retrieved
+d) Combine all transactions from all pages into a single list
+
+STEP 2: Analyze the complete results and create a summary report including:
+- Total number of transactions missing receipts (across all pages)
+- Total amount in dollars of transactions missing receipts (across all pages)
+- Summary of transactions (already sorted by most recent first)
+
+STEP 3: For each transaction found across ALL pages in Step 1:
+- Call send_receipt_reminder with transaction_id parameter
+- Track successful reminders sent vs failed attempts
+- Note any 429 responses (reminder already sent in last 24 hours)
+
+STEP 4: Provide a final summary including:
+- Missing receipt statistics from Step 2
+- Reminder sending results from Step 3 (total sent, total failed, total already sent recently)
+- Compliance recommendations
+
+Present all information in a clear, professional format suitable for compliance reporting.
+"""
