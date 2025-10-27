@@ -159,19 +159,14 @@ async def get_transactions(
         call_kwargs: Dict[str, Any] = {
             "page": page,
             "per_page": per_page,
+            "from_date": from_date,
+            "to_date": to_date,
             "virtual_card_id": virtual_card_id,
             "min_amount_cents": min_amount_cents,
             "max_amount_cents": max_amount_cents,
             "search_term": search_term,
             "sort_field": sort_field,
         }
-
-        if "from_date" in parameters:
-            call_kwargs["from_date"] = from_date
-            call_kwargs["to_date"] = to_date
-        else:
-            call_kwargs["since"] = from_date
-            call_kwargs["until"] = to_date
 
         if normalized_statuses:
             if "statuses" in parameters:
