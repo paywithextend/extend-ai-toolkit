@@ -173,7 +173,7 @@ async def get_transactions(
                 call_kwargs["statuses"] = normalized_statuses
             elif "status" in parameters:
                 if len(normalized_statuses) > 1:
-                    raise ValueError("Multiple statuses are not supported by the installed paywithextend version.")
+                    raise ValueError("Multiple statuses require paywithextend>=2.0.0. Current version only supports a single status parameter.")
                 call_kwargs["status"] = normalized_statuses[0]
 
         if normalized_receipt_statuses and "receipt_statuses" in parameters:
