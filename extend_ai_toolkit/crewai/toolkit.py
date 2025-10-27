@@ -8,6 +8,7 @@ from extend_ai_toolkit.shared import (
     ExtendAPI,
     Tool
 )
+from extend_ai_toolkit.shared.auth import Authorization
 from .extend_tool import ExtendCrewAITool
 
 
@@ -25,6 +26,13 @@ class ExtendCrewAIToolkit(AgentToolkit[BaseTool]):
         )
         self._llm = None
         
+    @classmethod
+    def from_auth(cls, auth: Authorization, configuration: Configuration) -> "ExtendCrewAIToolkit":
+        return cls(
+            extend_api=ExtendAPI.from_auth(auth),
+            configuration=configuration
+        )
+
     @classmethod
     def default_instance(cls, api_key: str, api_secret: str, configuration: Configuration) -> "ExtendCrewAIToolkit":
         return cls(
