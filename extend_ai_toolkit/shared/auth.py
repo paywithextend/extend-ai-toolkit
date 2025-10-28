@@ -72,7 +72,7 @@ def create_client_with_auth(auth: Authorization) -> ExtendClient:
     return ExtendClient(auth=auth)
 
 
-def get_basic_auth_class():  # pragma: no cover - trivial accessor
-    """Expose the BasicAuth class when available, else return None."""
+def get_basic_auth_class() -> Optional[type]:  # pragma: no cover - trivial accessor
+    """Expose the BasicAuth class when available, otherwise return None."""
 
     return _ExtendBasicAuth
