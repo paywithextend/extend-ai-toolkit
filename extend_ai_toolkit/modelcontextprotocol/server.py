@@ -10,6 +10,7 @@ from extend_ai_toolkit.shared import ExtendAPI
 from extend_ai_toolkit.shared import ExtendAPITools
 from extend_ai_toolkit.shared import functions
 from extend_ai_toolkit.shared import tools, Tool
+from extend_ai_toolkit.shared.auth import Authorization
 from ..__version__ import __version__ as _version
 
 logger = logging.getLogger(__name__)
@@ -81,6 +82,10 @@ class ExtendMCPServer(FastMCP):
                 tool.description
             )
             
+    @classmethod
+    def from_auth(cls, auth: Authorization, configuration: Configuration):
+        return cls(extend_api=ExtendAPI.from_auth(auth), configuration=configuration)
+
     @classmethod
     def default_instance(cls, api_key: str, api_secret: str, configuration: Configuration):
         return cls(extend_api=ExtendAPI.default_instance(api_key, api_secret), configuration=configuration)

@@ -1,4 +1,7 @@
 from dotenv import load_dotenv
+from extend import ExtendClient
+
+from .auth import Authorization, create_client_with_auth, create_extend_client
 
 from .enums import ExtendAPITools
 from .functions import *
@@ -21,13 +24,12 @@ class ExtendAPI:
         self.extend = extend
     
     @classmethod
+    def from_auth(cls, auth: Authorization) -> "ExtendAPI":
+        return cls(extend=create_client_with_auth(auth))
+
+    @classmethod
     def default_instance(cls, api_key: str, api_secret: str) -> "ExtendAPI":
-        return cls(
-            extend=ExtendClient(
-                api_key=api_key,
-                api_secret=api_secret
-            )
-        )
+        return cls(extend=create_extend_client(api_key=api_key, api_secret=api_secret))
 
     async def run(self, tool: str, *args, **kwargs) -> str:
         match ExtendAPITools(tool).value:

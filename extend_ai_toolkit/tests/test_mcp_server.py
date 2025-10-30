@@ -5,6 +5,7 @@ import pytest
 from mcp.server import FastMCP
 from pydantic import BaseModel
 
+from extend_ai_toolkit import __version__ as toolkit_version
 from extend_ai_toolkit.modelcontextprotocol import ExtendMCPServer
 from extend_ai_toolkit.shared import Configuration, ExtendAPITools, Tool
 
@@ -35,6 +36,7 @@ def mock_extend_api():
         mock_api_instance = Mock()
         mock_api_instance.run = AsyncMock()
         mock_api_class.default_instance.return_value = mock_api_instance
+        mock_api_class.from_auth.return_value = mock_api_instance
         server.ExtendAPI = mock_api_class
 
         yield mock_api_class
@@ -114,7 +116,7 @@ def test_init_calls_parent_constructor(mock_fastmcp):
     # Verify the parent constructor was called with correct arguments
     mock_fastmcp["init"].assert_called_once_with(
         name="Extend MCP Server",
-        version="1.1.0",
+        version=toolkit_version,
     )
 
 def test_init_registers_allowed_tools(server, mock_configuration, mock_fastmcp):

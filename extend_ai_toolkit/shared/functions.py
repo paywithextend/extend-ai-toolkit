@@ -1,9 +1,10 @@
+import inspect
 import io
 import logging
 import os
 import uuid
 from datetime import datetime, timedelta
-from typing import Dict, Optional, List
+from typing import Any, Dict, Optional, List, Sequence, Union
 
 from extend import ExtendClient
 
@@ -99,6 +100,10 @@ async def get_transactions(
         from_date: Optional[str] = None,
         to_date: Optional[str] = None,
         status: Optional[str] = None,
+        statuses: Optional[Sequence[str]] = None,
+        receipt_statuses: Optional[Sequence[str]] = None,
+        expense_category_statuses: Optional[Sequence[str]] = None,
+        missing_expense_categories: Optional[bool] = None,
         virtual_card_id: Optional[str] = None,
         min_amount_cents: Optional[int] = None,
         max_amount_cents: Optional[int] = None,
@@ -114,7 +119,11 @@ async def get_transactions(
         per_page (int): number of transactions per page,
         from_date (Optional[str]): Start date (YYYY-MM-DD)
         to_date (Optional[str]): End date (YYYY-MM-DD)
-        status (Optional[str]): Filter transactions by status (e.g., "PENDING", "CLEARED", "DECLINED", "NO_MATCH", "AVS_PASS", "AVS_FAIL", "AUTH_REVERSAL")
+        status (Optional[str]): Filter transactions by status (e.g., "PENDING", "CLEARED", "DECLINED")
+        statuses (Optional[Sequence[str]]): Provide multiple status filters (2.0+)
+        receipt_statuses (Optional[Sequence[str]]): Filter by receipt statuses when supported
+        expense_category_statuses (Optional[Sequence[str]]): Filter by expense category statuses when supported
+        missing_expense_categories (Optional[bool]): Filter transactions missing expense categorizations (2.0+)
         virtual_card_id (Optional[str]): Filter by specific virtual card
         min_amount_cents (Optional[int]): Minimum amount in cents
         max_amount_cents (Optional[int]): Maximum amount in cents
@@ -126,19 +135,67 @@ async def get_transactions(
 
     """
     try:
-        response = await extend.transactions.get_transactions(
-            page=page,
-            per_page=per_page,
-            from_date=from_date,
-            to_date=to_date,
-            status=status.upper() if status else None,
-            virtual_card_id=virtual_card_id,
-            min_amount_cents=min_amount_cents,
-            max_amount_cents=max_amount_cents,
-            search_term=search_term,
-            sort_field=sort_field,
-            receipt_missing=receipt_missing,
-        )
+        transaction_method = extend.transactions.get_transactions
+        parameters = inspect.signature(transaction_method).parameters
+
+        def _normalize(values: Optional[Union[Sequence[str], str]]) -> Optional[List[str]]:
+            if values is None:
+                return None
+            if isinstance(values, str):
+                iterable = [values]
+            else:
+                iterable = list(values)
+
+            normalized = [value.upper() for value in iterable if value]
+            return normalized or None
+
+        normalized_statuses = _normalize(statuses)
+        if normalized_statuses is None and status:
+            normalized_statuses = _normalize([status])
+
+        normalized_receipt_statuses = _normalize(receipt_statuses)
+        normalized_expense_category_statuses = _normalize(expense_category_statuses)
+
+        call_kwargs: Dict[str, Any] = {
+            "page": page,
+            "per_page": per_page,
+            "from_date": from_date,
+            "to_date": to_date,
+            "virtual_card_id": virtual_card_id,
+            "min_amount_cents": min_amount_cents,
+            "max_amount_cents": max_amount_cents,
+            "search_term": search_term,
+            "sort_field": sort_field,
+        }
+
+        if normalized_statuses:
+            if "statuses" in parameters:
+                call_kwargs["statuses"] = normalized_statuses
+            elif "status" in parameters:
+                if len(normalized_statuses) > 1:
+                    raise ValueError("Multiple statuses require paywithextend>=2.0.0. Current version only supports a single status parameter.")
+                call_kwargs["status"] = normalized_statuses[0]
+
+        if normalized_receipt_statuses and "receipt_statuses" in parameters:
+            call_kwargs["receipt_statuses"] = normalized_receipt_statuses
+
+        if normalized_expense_category_statuses and "expense_category_statuses" in parameters:
+            call_kwargs["expense_category_statuses"] = normalized_expense_category_statuses
+
+        if missing_expense_categories is not None and "missing_expense_categories" in parameters:
+            call_kwargs["missing_expense_categories"] = missing_expense_categories
+
+        if receipt_missing is not None and "receipt_missing" in parameters:
+            call_kwargs["receipt_missing"] = receipt_missing
+
+        supported_param_names = set(parameters.keys())
+        filtered_kwargs = {
+            key: value
+            for key, value in call_kwargs.items()
+            if key in supported_param_names and value is not None
+        }
+
+        response = await transaction_method(**filtered_kwargs)
         return response
 
     except Exception as e:

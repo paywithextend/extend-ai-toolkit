@@ -44,6 +44,22 @@ EXTEND_API_KEY=your_api_key_here
 EXTEND_API_SECRET=your_api_secret_here
 ```
 
+### Custom Authorization (paywithextend 2.0+)
+
+When you upgrade to `paywithextend>=2.0.0`, the SDK accepts reusable authorization
+strategies. You can pass any implementation (including the new `BearerAuth`) to
+the toolkit:
+
+```python
+from extend.auth import BearerAuth
+from extend_ai_toolkit.shared import ExtendAPI
+
+extend_api = ExtendAPI.from_auth(BearerAuth(jwt_token="your-jwt-token"))
+```
+
+If you're still using `paywithextend` 1.x, continue providing `api_key` and
+`api_secret`; the toolkit adapts automatically.
+
 ## Available Tools
 
 The toolkit provides a comprehensive set of tools organized by functionality:
