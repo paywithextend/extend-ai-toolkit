@@ -6,8 +6,8 @@ import uuid
 import httpx
 import pytest
 from dotenv import load_dotenv
-from extend import ExtendClient
 
+from extend_ai_toolkit.shared.auth import create_extend_client
 from extend_ai_toolkit.shared.functions import (
     get_virtual_cards,
     get_credit_cards,
@@ -50,7 +50,7 @@ def extend():
     """Create a real API client for integration testing"""
     api_key = os.environ.get("EXTEND_API_KEY")
     api_secret = os.environ.get("EXTEND_API_SECRET")
-    return ExtendClient(api_key, api_secret)
+    return create_extend_client(api_key, api_secret)
 
 
 @pytest.fixture(scope="session")

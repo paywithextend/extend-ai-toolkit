@@ -3,6 +3,8 @@ from typing import List, Generic
 
 from pydantic import PrivateAttr
 
+from .auth import Authorization
+
 from .api import ExtendAPI
 from .configuration import Configuration
 from .enums import Agent
@@ -25,6 +27,13 @@ class AgentToolkit(Generic[ToolType]):
             self.tool_for_agent(extend_api, tool)
             for tool in configuration.allowed_tools(tools)
         ]
+
+    @classmethod
+    def from_auth(cls, auth: Authorization, configuration: Configuration) -> "AgentToolkit":
+        return cls(
+            extend_api=ExtendAPI.from_auth(auth),
+            configuration=configuration
+        )
 
     @classmethod
     def default_instance(cls, api_key: str, api_secret: str, configuration: Configuration) -> "AgentToolkit":

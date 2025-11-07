@@ -29,9 +29,11 @@ extend_langchain_toolkit = ExtendLangChainToolkit.default_instance(
     api_secret,
     Configuration(
       scope=[
-        Scope(Product.VIRTUAL_CARDS, actions=Actions(read=True)),
+        Scope(Product.VIRTUAL_CARDS, actions=Actions(read=True,update=True)),
         Scope(Product.CREDIT_CARDS, actions=Actions(read=True)),
-        Scope(Product.TRANSACTIONS, actions=Actions(read=True)),
+        Scope(Product.TRANSACTIONS, actions=Actions(read=True,update=True)),
+        Scope(Product.EXPENSE_CATEGORIES, actions=Actions(read=True)),
+        Scope(Product.RECEIPT_ATTACHMENTS, actions=Actions(read=True)),
        ]
     )
 )
