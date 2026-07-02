@@ -14,6 +14,60 @@ logger.setLevel(logging.INFO)
 pending_selections = {}
 
 
+def _clean_params(params: Dict[str, Any]) -> Dict[str, Any]:
+    return {key: value for key, value in params.items() if value is not None}
+
+
+def _api_client_for(extend: ExtendClient) -> Any:
+    api_client = getattr(extend, "_api_client", None)
+    if api_client is None:
+        raise AttributeError("Extend client does not expose a raw API client")
+    return api_client
+
+
+async def _raw_get(
+        extend: ExtendClient,
+        path: str,
+        params: Optional[Dict[str, Any]] = None,
+) -> Dict:
+    return await _api_client_for(extend).get(path, _clean_params(params or {}))
+
+
+async def _raw_post(
+        extend: ExtendClient,
+        path: str,
+        data: Optional[Dict[str, Any]] = None,
+) -> Dict:
+    return await _api_client_for(extend).post(path, _clean_params(data or {}))
+
+
+def _filter_graph_data(data: Any, include_graph_data: bool) -> Any:
+    if include_graph_data:
+        return data
+    if isinstance(data, dict):
+        graph_keys = {
+            "graphData",
+            "graph_data",
+            "chartData",
+            "chart_data",
+            "series",
+            "dataPoints",
+            "data_points",
+            "timeSeriesData",
+            "time_series_data",
+            "timeSeries",
+            "time_series",
+        }
+        return {
+            key: _filter_graph_data(value, include_graph_data)
+            for key, value in data.items()
+            if key not in graph_keys
+        }
+    if isinstance(data, list):
+        return [_filter_graph_data(item, include_graph_data) for item in data]
+    return data
+
+
 # =========================
 # Virtual Card Functions
 # =========================
@@ -150,8 +204,8 @@ async def get_transactions(
             return normalized or None
 
         normalized_statuses = _normalize(statuses)
-        if normalized_statuses is None and status:
-            normalized_statuses = _normalize([status])
+        if normalized_statuses is None:
+            normalized_statuses = _normalize(status)
 
         normalized_receipt_statuses = _normalize(receipt_statuses)
         normalized_expense_category_statuses = _normalize(expense_category_statuses)
@@ -203,6 +257,58 @@ async def get_transactions(
         raise Exception("Error getting transactions")
 
 
+async def count_transactions(
+        extend: ExtendClient,
+        from_date: Optional[str] = None,
+        to_date: Optional[str] = None,
+        status: Optional[Sequence[str]] = None,
+        virtual_card_id: Optional[str] = None,
+        min_amount_cents: Optional[int] = None,
+        max_amount_cents: Optional[int] = None,
+        search_term: Optional[str] = None,
+        expense_category_statuses: Optional[Sequence[str]] = None,
+) -> Dict:
+    """Count transactions matching report filters."""
+    try:
+        count_method = getattr(extend.transactions, "count_transactions", None)
+        normalized_statuses = [value.upper() for value in status] if status else None
+        normalized_expense_statuses = (
+            [value.upper()[0] + value.lower()[1:] for value in expense_category_statuses]
+            if expense_category_statuses
+            else None
+        )
+        if count_method is not None:
+            return await count_method(
+                from_date=from_date,
+                to_date=to_date,
+                status=normalized_statuses,
+                virtual_card_id=virtual_card_id,
+                min_amount_cents=min_amount_cents,
+                max_amount_cents=max_amount_cents,
+                search_term=search_term,
+                expense_category_statuses=normalized_expense_statuses,
+            )
+
+        return await _raw_get(
+            extend,
+            "/reports/transactions/count",
+            {
+                "since": from_date,
+                "until": to_date,
+                "statuses": normalized_statuses,
+                "virtualCardId": virtual_card_id,
+                "minClearingBillingCents": min_amount_cents,
+                "maxClearingBillingCents": max_amount_cents,
+                "search": search_term,
+                "expenseCategoryStatuses": normalized_expense_statuses,
+                "dateType": "Transaction",
+            },
+        )
+    except Exception as e:
+        logger.error("Error counting transactions: %s", e)
+        raise Exception("Error counting transactions")
+
+
 async def get_transaction_detail(extend: ExtendClient, transaction_id: str) -> Dict:
     """Get a transaction detail"""
     try:
@@ -223,17 +329,42 @@ async def get_credit_cards(
         page: int = 0,
         per_page: int = 10,
         status: Optional[str] = None,
+        type: Optional[str] = None,
         search_term: Optional[str] = None,
         sort_direction: Optional[str] = None,
 ) -> Dict:
     """Get a list of credit cards"""
     try:
-        response = await extend.credit_cards.get_credit_cards(
-            page=page,
-            per_page=per_page,
-            status=status.upper() if status else None,
-            search_term=search_term,
-            sort_direction=sort_direction,
+        credit_card_method = extend.credit_cards.get_credit_cards
+        parameters = inspect.signature(credit_card_method).parameters
+        if type is not None and "type" not in parameters:
+            return await _raw_get(
+                extend,
+                "/creditcards",
+                {
+                    "page": page,
+                    "count": per_page,
+                    "statuses": status.upper() if status else None,
+                    "types": type.upper(),
+                    "search": search_term,
+                    "sortDirection": sort_direction,
+                },
+            )
+
+        call_kwargs = {
+            "page": page,
+            "per_page": per_page,
+            "status": status.upper() if status else None,
+            "type": type.upper() if type else None,
+            "search_term": search_term,
+            "sort_direction": sort_direction,
+        }
+        response = await credit_card_method(
+            **{
+                key: value
+                for key, value in call_kwargs.items()
+                if key in parameters
+            }
         )
         return response
 
@@ -324,6 +455,25 @@ async def get_expense_category_labels(
     except Exception as e:
         logger.error("Error getting expense category labels: %s", e)
         raise Exception("Error getting expense category labels: %s", e)
+
+
+async def get_expense_category_label(
+        extend: ExtendClient,
+        category_id: str,
+        label_id: str,
+) -> Dict:
+    """Get detailed information about a specific expense category label."""
+    try:
+        label_method = getattr(extend.expense_data, "get_expense_category_label", None)
+        if label_method is not None:
+            return await label_method(category_id=category_id, label_id=label_id)
+        return await _raw_get(
+            extend,
+            f"/expensedata/categories/{category_id}/labels/{label_id}",
+        )
+    except Exception as e:
+        logger.error("Error getting expense category label: %s", e)
+        raise Exception("Error getting expense category label: %s", e)
 
 
 async def create_expense_category(
@@ -443,7 +593,7 @@ async def propose_transaction_expense_data(
         Dict: A confirmation request with token and expiration
     """
     # Fetch transaction to ensure it exists
-    transaction = await extend.transactions.get_transaction(transaction_id)
+    await extend.transactions.get_transaction(transaction_id)
 
     # Generate a unique confirmation token
     confirmation_token = str(uuid.uuid4())
@@ -539,11 +689,354 @@ async def update_transaction_expense_data(
     """
     try:
         if not user_confirmed_data_values:
-            raise Exception(f"User has not confirmed the expense category or label values")
+            raise Exception("User has not confirmed the expense category or label values")
         response = await extend.transactions.update_transaction_expense_data(transaction_id, data)
         return response
     except Exception as e:
         raise Exception(f"Error updating transaction expense data: {str(e)}")
+
+
+# =========================
+# Automation Functions
+# =========================
+
+async def trigger_async_predict_expense_data_for_transactions(
+        extend: ExtendClient,
+        transaction_ids: List[str],
+) -> Dict:
+    """Trigger async expense-data prediction for transactions."""
+    try:
+        automation = getattr(extend, "automation", None)
+        trigger = (
+            getattr(
+                automation,
+                "trigger_async_predict_expense_data_for_transactions",
+                None,
+            )
+            if automation is not None
+            else None
+        )
+        if trigger is not None:
+            return await trigger(transaction_ids=transaction_ids)
+        return await _raw_post(
+            extend,
+            "/automations/transactions/enrichment",
+            {"transactionIds": transaction_ids},
+        )
+    except Exception as e:
+        logger.error("Error triggering expense-data prediction: %s", e)
+        raise Exception("Error triggering expense-data prediction")
+
+
+# =========================
+# Organization And User Functions
+# =========================
+
+async def get_organizations(extend: ExtendClient) -> Dict:
+    """Get organizations available to the current user."""
+    try:
+        organizations = getattr(extend, "organizations", None)
+        if organizations is not None and hasattr(organizations, "list"):
+            return await organizations.list()
+        return await _raw_get(extend, "/organizations/")
+    except Exception as e:
+        logger.error("Error getting organizations: %s", e)
+        raise Exception("Error getting organizations")
+
+
+async def get_organization_members(
+        extend: ExtendClient,
+        organization_id: str,
+        page: Optional[int] = None,
+        count: Optional[int] = None,
+        search: Optional[str] = None,
+        organization_role: Optional[str] = None,
+        organization_roles: Optional[List[str]] = None,
+        show_deactivated_users: Optional[bool] = True,
+        render_metrics: Optional[bool] = False,
+) -> Dict:
+    """Get members for an organization."""
+    try:
+        organizations = getattr(extend, "organizations", None)
+        if organizations is not None and hasattr(organizations, "get_members"):
+            return await organizations.get_members(
+                organization_id=organization_id,
+                page=page,
+                count=count,
+                search=search,
+                organization_role=organization_role,
+                organization_roles=organization_roles,
+                show_deactivated_users=show_deactivated_users,
+                render_metrics=render_metrics,
+            )
+        return await _raw_get(
+            extend,
+            f"/organizations/{organization_id}/members",
+            {
+                "page": page,
+                "count": count,
+                "search": search,
+                "organizationRole": organization_role,
+                "organizationRoles": organization_roles,
+                "showDeactivatedUsers": show_deactivated_users,
+                "renderMetrics": render_metrics,
+            },
+        )
+    except Exception as e:
+        logger.error("Error getting organization members: %s", e)
+        raise Exception("Error getting organization members")
+
+
+async def get_user_details(extend: ExtendClient, user_id: str) -> Dict:
+    """Get a user's profile details."""
+    try:
+        users = getattr(extend, "users", None)
+        if users is not None and hasattr(users, "get_user"):
+            return await users.get_user(user_id=user_id)
+        return await _raw_get(extend, f"/users/{user_id}")
+    except Exception as e:
+        logger.error("Error getting user details: %s", e)
+        raise Exception("Error getting user details")
+
+
+async def get_current_user(extend: ExtendClient) -> Dict:
+    """Get the authenticated user's profile."""
+    try:
+        users = getattr(extend, "users", None)
+        if users is not None and hasattr(users, "get_me"):
+            return await users.get_me()
+        return await _raw_get(extend, "/users/me")
+    except Exception as e:
+        logger.error("Error getting current user: %s", e)
+        raise Exception("Error getting current user")
+
+
+async def get_expense_policy(extend: ExtendClient, organization_id: str) -> Dict:
+    """Get raw expense policy text for an organization."""
+    try:
+        expense_policy = getattr(extend, "expense_policy", None)
+        if expense_policy is not None and hasattr(expense_policy, "get_expense_policy"):
+            return await expense_policy.get_expense_policy(organization_id=organization_id)
+        return await _raw_get(
+            extend,
+            f"/organizations/{organization_id}/expensepolicy/rawtext",
+        )
+    except Exception as e:
+        logger.error("Error getting expense policy: %s", e)
+        raise Exception("Error getting expense policy")
+
+
+# =========================
+# Insights Functions
+# =========================
+
+def _insights_params(
+        *,
+        since: Optional[str] = None,
+        until: Optional[str] = None,
+        expense_category_id: Optional[str] = None,
+        expense_label_id: Optional[str] = None,
+        merchant_category: Optional[str] = None,
+        credit_card_id: Optional[List[str]] = None,
+        virtual_card_id: Optional[List[str]] = None,
+        recipient_id: Optional[List[str]] = None,
+        departments: Optional[List[str]] = None,
+        comparison_type: Optional[str] = None,
+        interval: Optional[str] = None,
+) -> Dict[str, Any]:
+    return {
+        "since": since,
+        "until": until,
+        "expenseCategoryId": expense_category_id,
+        "expenseLabelId": expense_label_id,
+        "merchantCategory": merchant_category,
+        "creditCardId": credit_card_id,
+        "virtualCardId": virtual_card_id,
+        "recipientId": recipient_id,
+        "departments": departments,
+        "comparisonType": comparison_type,
+        "interval": interval,
+    }
+
+
+async def _call_insights(
+        extend: ExtendClient,
+        method_name: str,
+        path: str,
+        include_graph_data: bool,
+        **params: Any,
+) -> Dict:
+    insights = getattr(extend, "insights", None)
+    method = getattr(insights, method_name, None) if insights is not None else None
+    if method is not None:
+        result = await method(include_graph_data=include_graph_data, **params)
+    else:
+        result = await _raw_get(
+            extend,
+            f"/clickhouse/insights/{path}",
+            _insights_params(**params),
+        )
+    return _filter_graph_data(result, include_graph_data)
+
+
+async def get_spend_by_expense_category(
+        extend: ExtendClient,
+        since: Optional[str] = None,
+        until: Optional[str] = None,
+        expense_category_id: Optional[str] = None,
+        expense_label_id: Optional[str] = None,
+        merchant_category: Optional[str] = None,
+        credit_card_id: Optional[List[str]] = None,
+        virtual_card_id: Optional[List[str]] = None,
+        recipient_id: Optional[List[str]] = None,
+        departments: Optional[List[str]] = None,
+        include_graph_data: bool = True,
+) -> Dict:
+    return await _call_insights(
+        extend,
+        "get_spend_by_expense_category_label",
+        "spendbyexpensecategorylabel",
+        include_graph_data,
+        since=since,
+        until=until,
+        expense_category_id=expense_category_id,
+        expense_label_id=expense_label_id,
+        merchant_category=merchant_category,
+        credit_card_id=credit_card_id,
+        virtual_card_id=virtual_card_id,
+        recipient_id=recipient_id,
+        departments=departments,
+    )
+
+
+async def get_spend_by_merchant_category(
+        extend: ExtendClient,
+        since: Optional[str] = None,
+        until: Optional[str] = None,
+        expense_category_id: Optional[str] = None,
+        expense_label_id: Optional[str] = None,
+        merchant_category: Optional[str] = None,
+        credit_card_id: Optional[List[str]] = None,
+        virtual_card_id: Optional[List[str]] = None,
+        recipient_id: Optional[List[str]] = None,
+        departments: Optional[List[str]] = None,
+        include_graph_data: bool = True,
+) -> Dict:
+    return await _call_insights(
+        extend,
+        "get_spend_by_merchant_category",
+        "spendbymerchantcategory",
+        include_graph_data,
+        since=since,
+        until=until,
+        expense_category_id=expense_category_id,
+        expense_label_id=expense_label_id,
+        merchant_category=merchant_category,
+        credit_card_id=credit_card_id,
+        virtual_card_id=virtual_card_id,
+        recipient_id=recipient_id,
+        departments=departments,
+    )
+
+
+async def get_spend_over_time_by_expense(
+        extend: ExtendClient,
+        since: Optional[str] = None,
+        until: Optional[str] = None,
+        expense_category_id: Optional[str] = None,
+        expense_label_id: Optional[str] = None,
+        merchant_category: Optional[str] = None,
+        credit_card_id: Optional[List[str]] = None,
+        virtual_card_id: Optional[List[str]] = None,
+        recipient_id: Optional[List[str]] = None,
+        departments: Optional[List[str]] = None,
+        comparison_type: str = "MOM",
+        interval: str = "DAY",
+        include_graph_data: bool = True,
+) -> Dict:
+    return await _call_insights(
+        extend,
+        "get_spend_over_time_for_expense_category_label",
+        "spendovertimeexpensecategorylabel",
+        include_graph_data,
+        since=since,
+        until=until,
+        expense_category_id=expense_category_id,
+        expense_label_id=expense_label_id,
+        merchant_category=merchant_category,
+        credit_card_id=credit_card_id,
+        virtual_card_id=virtual_card_id,
+        recipient_id=recipient_id,
+        departments=departments,
+        comparison_type=comparison_type,
+        interval=interval,
+    )
+
+
+async def get_spend_over_time_by_merchant(
+        extend: ExtendClient,
+        since: Optional[str] = None,
+        until: Optional[str] = None,
+        expense_category_id: Optional[str] = None,
+        expense_label_id: Optional[str] = None,
+        merchant_category: Optional[str] = None,
+        credit_card_id: Optional[List[str]] = None,
+        virtual_card_id: Optional[List[str]] = None,
+        recipient_id: Optional[List[str]] = None,
+        departments: Optional[List[str]] = None,
+        comparison_type: str = "MOM",
+        interval: str = "DAY",
+        include_graph_data: bool = True,
+) -> Dict:
+    return await _call_insights(
+        extend,
+        "get_spend_over_time_for_merchant_category",
+        "spendovertimemerchantcategory",
+        include_graph_data,
+        since=since,
+        until=until,
+        expense_category_id=expense_category_id,
+        expense_label_id=expense_label_id,
+        merchant_category=merchant_category,
+        credit_card_id=credit_card_id,
+        virtual_card_id=virtual_card_id,
+        recipient_id=recipient_id,
+        departments=departments,
+        comparison_type=comparison_type,
+        interval=interval,
+    )
+
+
+async def get_spend_vs_prior_period(
+        extend: ExtendClient,
+        since: Optional[str] = None,
+        until: Optional[str] = None,
+        expense_category_id: Optional[str] = None,
+        expense_label_id: Optional[str] = None,
+        merchant_category: Optional[str] = None,
+        credit_card_id: Optional[List[str]] = None,
+        virtual_card_id: Optional[List[str]] = None,
+        recipient_id: Optional[List[str]] = None,
+        departments: Optional[List[str]] = None,
+        comparison_type: str = "MOM",
+        include_graph_data: bool = True,
+) -> Dict:
+    return await _call_insights(
+        extend,
+        "get_spend_vs_prior_period",
+        "spendvspriorperiod",
+        include_graph_data,
+        since=since,
+        until=until,
+        expense_category_id=expense_category_id,
+        expense_label_id=expense_label_id,
+        merchant_category=merchant_category,
+        credit_card_id=credit_card_id,
+        virtual_card_id=virtual_card_id,
+        recipient_id=recipient_id,
+        departments=departments,
+        comparison_type=comparison_type,
+    )
 
 
 # =========================

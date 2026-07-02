@@ -44,17 +44,50 @@ _RAW_FUNCTIONS: dict[ExtendAPITools, Callable[..., Any]] = {
     ExtendAPITools.GET_CREDIT_CARDS: functions.get_credit_cards,
     ExtendAPITools.GET_CREDIT_CARD_DETAIL: functions.get_credit_card_detail,
     ExtendAPITools.GET_TRANSACTIONS: functions.get_transactions,
+    ExtendAPITools.COUNT_TRANSACTIONS: functions.count_transactions,
     ExtendAPITools.GET_TRANSACTION_DETAIL: functions.get_transaction_detail,
-    ExtendAPITools.UPDATE_TRANSACTION_EXPENSE_DATA: functions.update_transaction_expense_data,
+    ExtendAPITools.UPDATE_TRANSACTION_EXPENSE_DATA: (
+        functions.update_transaction_expense_data
+    ),
     ExtendAPITools.GET_EXPENSE_CATEGORIES: functions.get_expense_categories,
     ExtendAPITools.GET_EXPENSE_CATEGORY: functions.get_expense_category,
     ExtendAPITools.GET_EXPENSE_CATEGORY_LABELS: functions.get_expense_category_labels,
+    ExtendAPITools.GET_EXPENSE_CATEGORY_LABEL: functions.get_expense_category_label,
     ExtendAPITools.CREATE_EXPENSE_CATEGORY: functions.create_expense_category,
-    ExtendAPITools.CREATE_EXPENSE_CATEGORY_LABEL: functions.create_expense_category_label,
+    ExtendAPITools.CREATE_EXPENSE_CATEGORY_LABEL: (
+        functions.create_expense_category_label
+    ),
     ExtendAPITools.UPDATE_EXPENSE_CATEGORY: functions.update_expense_category,
-    ExtendAPITools.UPDATE_EXPENSE_CATEGORY_LABEL: functions.update_expense_category_label,
-    ExtendAPITools.PROPOSE_EXPENSE_CATEGORY_LABEL: functions.propose_transaction_expense_data,
-    ExtendAPITools.CONFIRM_EXPENSE_CATEGORY_LABEL: functions.confirm_transaction_expense_data,
+    ExtendAPITools.UPDATE_EXPENSE_CATEGORY_LABEL: (
+        functions.update_expense_category_label
+    ),
+    ExtendAPITools.TRIGGER_ASYNC_PREDICT_EXPENSE_DATA_FOR_TRANSACTIONS: (
+        functions.trigger_async_predict_expense_data_for_transactions
+    ),
+    ExtendAPITools.GET_ORGANIZATIONS: functions.get_organizations,
+    ExtendAPITools.GET_ORGANIZATION_MEMBERS: functions.get_organization_members,
+    ExtendAPITools.GET_USER_DETAILS: functions.get_user_details,
+    ExtendAPITools.GET_CURRENT_USER: functions.get_current_user,
+    ExtendAPITools.GET_EXPENSE_POLICY: functions.get_expense_policy,
+    ExtendAPITools.GET_SPEND_BY_EXPENSE_CATEGORY: (
+        functions.get_spend_by_expense_category
+    ),
+    ExtendAPITools.GET_SPEND_BY_MERCHANT_CATEGORY: (
+        functions.get_spend_by_merchant_category
+    ),
+    ExtendAPITools.GET_SPEND_OVER_TIME_BY_EXPENSE: (
+        functions.get_spend_over_time_by_expense
+    ),
+    ExtendAPITools.GET_SPEND_OVER_TIME_BY_MERCHANT: (
+        functions.get_spend_over_time_by_merchant
+    ),
+    ExtendAPITools.GET_SPEND_VS_PRIOR_PERIOD: functions.get_spend_vs_prior_period,
+    ExtendAPITools.PROPOSE_EXPENSE_CATEGORY_LABEL: (
+        functions.propose_transaction_expense_data
+    ),
+    ExtendAPITools.CONFIRM_EXPENSE_CATEGORY_LABEL: (
+        functions.confirm_transaction_expense_data
+    ),
     ExtendAPITools.CREATE_RECEIPT_ATTACHMENT: functions.create_receipt_attachment,
     ExtendAPITools.AUTOMATCH_RECEIPTS: functions.automatch_receipts,
     ExtendAPITools.GET_AUTOMATCH_STATUS: functions.get_automatch_status,

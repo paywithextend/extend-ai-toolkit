@@ -9,17 +9,31 @@ from .prompts import (
     get_virtual_card_detail_prompt,
     cancel_virtual_card_prompt,
     close_virtual_card_prompt,
+    count_transactions_prompt,
+    get_current_user_prompt,
     get_transactions_prompt,
     get_transaction_detail_prompt,
     get_credit_cards_prompt,
+    get_expense_policy_prompt,
     get_expense_categories_prompt,
     get_expense_category_prompt,
     get_expense_category_labels_prompt,
+    get_expense_category_label_prompt,
+    get_organization_members_prompt,
+    get_organizations_prompt,
+    get_spend_by_expense_category_prompt,
+    get_spend_by_merchant_category_prompt,
+    get_spend_over_time_by_expense_prompt,
+    get_spend_over_time_by_merchant_prompt,
+    get_spend_vs_prior_period_prompt,
     create_expense_category_prompt,
     create_expense_category_label_prompt,
     update_expense_category_prompt,
+    update_expense_category_label_prompt,
     get_credit_card_detail_prompt,
     update_transaction_expense_data_prompt,
+    get_user_details_prompt,
+    trigger_async_predict_expense_data_for_transactions_prompt,
     create_receipt_attachment_prompt,
     get_automatch_status_prompt,
     automatch_receipts_prompt,
@@ -31,16 +45,30 @@ from .schemas import (
     CancelVirtualCard,
     CloseVirtualCard,
     GetCreditCards,
+    CountTransactions,
     GetTransactions,
     GetTransactionDetail,
+    GetCurrentUser,
+    GetExpensePolicy,
     GetExpenseCategories,
     GetExpenseCategory,
     GetExpenseCategoryLabels,
+    GetExpenseCategoryLabel,
+    GetOrganizationMembers,
+    GetOrganizations,
+    GetSpendByExpenseCategory,
+    GetSpendByMerchantCategory,
+    GetSpendOverTimeByExpense,
+    GetSpendOverTimeByMerchant,
+    GetSpendVsPriorPeriod,
     CreateExpenseCategory,
     CreateExpenseCategoryLabel,
     UpdateExpenseCategory,
+    UpdateExpenseCategoryLabel,
     GetCreditCardDetail,
     UpdateTransactionExpenseData,
+    GetUserDetails,
+    TriggerAsyncPredictExpenseDataForTransactions,
     GetAutomatchStatusSchema,
     AutomatchReceiptsSchema,
     CreateReceiptAttachmentSchema,
@@ -149,6 +177,17 @@ tools: List[Tool] = [
         ],
     ),
     Tool(
+        method=ExtendAPITools.COUNT_TRANSACTIONS,
+        description=count_transactions_prompt,
+        args_schema=CountTransactions,
+        required_scope=[
+            Scope(
+                type=Product.TRANSACTIONS,
+                actions={"read": True}
+            )
+        ],
+    ),
+    Tool(
         method=ExtendAPITools.GET_TRANSACTION_DETAIL,
         description=get_transaction_detail_prompt,
         args_schema=GetTransactionDetail,
@@ -171,6 +210,21 @@ tools: List[Tool] = [
                     "read": True,
                     "update": True,
                 }
+            )
+        ],
+    ),
+    Tool(
+        method=ExtendAPITools.TRIGGER_ASYNC_PREDICT_EXPENSE_DATA_FOR_TRANSACTIONS,
+        description=trigger_async_predict_expense_data_for_transactions_prompt,
+        args_schema=TriggerAsyncPredictExpenseDataForTransactions,
+        required_scope=[
+            Scope(
+                type=Product.AUTOMATIONS,
+                actions={"create": True}
+            ),
+            Scope(
+                type=Product.TRANSACTIONS,
+                actions={"read": True}
             )
         ],
     ),
@@ -208,6 +262,17 @@ tools: List[Tool] = [
         ],
     ),
     Tool(
+        method=ExtendAPITools.GET_EXPENSE_CATEGORY_LABEL,
+        description=get_expense_category_label_prompt,
+        args_schema=GetExpenseCategoryLabel,
+        required_scope=[
+            Scope(
+                type=Product.EXPENSE_CATEGORIES,
+                actions={"read": True}
+            )
+        ],
+    ),
+    Tool(
         method=ExtendAPITools.CREATE_EXPENSE_CATEGORY,
         description=create_expense_category_prompt,
         args_schema=CreateExpenseCategory,
@@ -237,6 +302,127 @@ tools: List[Tool] = [
             Scope(
                 type=Product.EXPENSE_CATEGORIES,
                 actions={"read": True, "update": True}
+            )
+        ],
+    ),
+    Tool(
+        method=ExtendAPITools.UPDATE_EXPENSE_CATEGORY_LABEL,
+        description=update_expense_category_label_prompt,
+        args_schema=UpdateExpenseCategoryLabel,
+        required_scope=[
+            Scope(
+                type=Product.EXPENSE_CATEGORIES,
+                actions={"read": True, "update": True}
+            )
+        ],
+    ),
+    Tool(
+        method=ExtendAPITools.GET_ORGANIZATIONS,
+        description=get_organizations_prompt,
+        args_schema=GetOrganizations,
+        required_scope=[
+            Scope(
+                type=Product.ORGANIZATIONS,
+                actions={"read": True}
+            )
+        ],
+    ),
+    Tool(
+        method=ExtendAPITools.GET_ORGANIZATION_MEMBERS,
+        description=get_organization_members_prompt,
+        args_schema=GetOrganizationMembers,
+        required_scope=[
+            Scope(
+                type=Product.ORGANIZATIONS,
+                actions={"read": True}
+            )
+        ],
+    ),
+    Tool(
+        method=ExtendAPITools.GET_USER_DETAILS,
+        description=get_user_details_prompt,
+        args_schema=GetUserDetails,
+        required_scope=[
+            Scope(
+                type=Product.USERS,
+                actions={"read": True}
+            )
+        ],
+    ),
+    Tool(
+        method=ExtendAPITools.GET_CURRENT_USER,
+        description=get_current_user_prompt,
+        args_schema=GetCurrentUser,
+        required_scope=[
+            Scope(
+                type=Product.USERS,
+                actions={"read": True}
+            )
+        ],
+    ),
+    Tool(
+        method=ExtendAPITools.GET_EXPENSE_POLICY,
+        description=get_expense_policy_prompt,
+        args_schema=GetExpensePolicy,
+        required_scope=[
+            Scope(
+                type=Product.EXPENSE_POLICIES,
+                actions={"read": True}
+            )
+        ],
+    ),
+    Tool(
+        method=ExtendAPITools.GET_SPEND_BY_EXPENSE_CATEGORY,
+        description=get_spend_by_expense_category_prompt,
+        args_schema=GetSpendByExpenseCategory,
+        required_scope=[
+            Scope(
+                type=Product.INSIGHTS,
+                actions={"read": True}
+            )
+        ],
+    ),
+    Tool(
+        method=ExtendAPITools.GET_SPEND_BY_MERCHANT_CATEGORY,
+        description=get_spend_by_merchant_category_prompt,
+        args_schema=GetSpendByMerchantCategory,
+        required_scope=[
+            Scope(
+                type=Product.INSIGHTS,
+                actions={"read": True}
+            )
+        ],
+    ),
+    Tool(
+        method=ExtendAPITools.GET_SPEND_OVER_TIME_BY_EXPENSE,
+        description=get_spend_over_time_by_expense_prompt,
+        args_schema=GetSpendOverTimeByExpense,
+        required_scope=[
+            Scope(
+                type=Product.INSIGHTS,
+                actions={"read": True}
+            )
+        ],
+    ),
+    Tool(
+        method=ExtendAPITools.GET_SPEND_OVER_TIME_BY_MERCHANT,
+        description=get_spend_over_time_by_merchant_prompt,
+        args_schema=GetSpendOverTimeByMerchant,
+        required_scope=[
+            Scope(
+                type=Product.INSIGHTS,
+                actions={"read": True}
+            )
+        ],
+    ),
+    Tool(
+        method=ExtendAPITools.GET_SPEND_VS_PRIOR_PERIOD,
+        description=get_spend_vs_prior_period_prompt,
+        args_schema=GetSpendVsPriorPeriod,
+        required_scope=[
+            Scope(
+                type=Product.INSIGHTS,
+                actions={"read": True}
             )
         ],
     ),
