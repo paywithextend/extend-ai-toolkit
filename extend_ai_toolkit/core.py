@@ -61,27 +61,10 @@ _RAW_FUNCTIONS: dict[ExtendAPITools, Callable[..., Any]] = {
     ExtendAPITools.UPDATE_EXPENSE_CATEGORY_LABEL: (
         functions.update_expense_category_label
     ),
-    ExtendAPITools.TRIGGER_ASYNC_PREDICT_EXPENSE_DATA_FOR_TRANSACTIONS: (
-        functions.trigger_async_predict_expense_data_for_transactions
-    ),
     ExtendAPITools.GET_ORGANIZATIONS: functions.get_organizations,
     ExtendAPITools.GET_ORGANIZATION_MEMBERS: functions.get_organization_members,
     ExtendAPITools.GET_USER_DETAILS: functions.get_user_details,
-    ExtendAPITools.GET_CURRENT_USER: functions.get_current_user,
     ExtendAPITools.GET_EXPENSE_POLICY: functions.get_expense_policy,
-    ExtendAPITools.GET_SPEND_BY_EXPENSE_CATEGORY: (
-        functions.get_spend_by_expense_category
-    ),
-    ExtendAPITools.GET_SPEND_BY_MERCHANT_CATEGORY: (
-        functions.get_spend_by_merchant_category
-    ),
-    ExtendAPITools.GET_SPEND_OVER_TIME_BY_EXPENSE: (
-        functions.get_spend_over_time_by_expense
-    ),
-    ExtendAPITools.GET_SPEND_OVER_TIME_BY_MERCHANT: (
-        functions.get_spend_over_time_by_merchant
-    ),
-    ExtendAPITools.GET_SPEND_VS_PRIOR_PERIOD: functions.get_spend_vs_prior_period,
     ExtendAPITools.PROPOSE_EXPENSE_CATEGORY_LABEL: (
         functions.propose_transaction_expense_data
     ),

@@ -10,18 +10,21 @@ def test_catalog_exposes_current_service_endpoint_tools():
     assert {
         "count_transactions",
         "get_expense_category_label",
-        "trigger_async_predict_expense_data_for_transactions",
         "get_organizations",
         "get_organization_members",
         "get_user_details",
-        "get_current_user",
         "get_expense_policy",
+    }.issubset(tool_names)
+
+    assert {
+        "trigger_async_predict_expense_data_for_transactions",
+        "get_current_user",
         "get_spend_by_expense_category",
         "get_spend_by_merchant_category",
         "get_spend_over_time_by_expense",
         "get_spend_over_time_by_merchant",
         "get_spend_vs_prior_period",
-    }.issubset(tool_names)
+    }.isdisjoint(tool_names)
 
 
 def test_new_endpoint_families_are_available_through_scopes():
@@ -37,8 +40,6 @@ def test_new_endpoint_families_are_available_through_scopes():
                         "organizations.read",
                         "users.read",
                         "expense_policies.read",
-                        "insights.read",
-                        "automations.create",
                     ]
                 )
             )
@@ -46,10 +47,8 @@ def test_new_endpoint_families_are_available_through_scopes():
     }
 
     assert "count_transactions" in scoped_names
-    assert "get_current_user" in scoped_names
     assert "get_expense_policy" in scoped_names
-    assert "get_spend_vs_prior_period" in scoped_names
-    assert "trigger_async_predict_expense_data_for_transactions" in scoped_names
+    assert "get_user_details" in scoped_names
 
 
 def test_transaction_and_card_schemas_cover_current_filter_shapes():
@@ -83,39 +82,7 @@ async def test_execute_tool_supports_raw_get_endpoints_missing_from_sdk_resource
 
     extend = Extend()
 
-    result = await execute_tool(extend, "get_current_user", {})
+    result = await execute_tool(extend, "get_user_details", {"user_id": "u_123"})
 
     assert result == {"user": {"id": "u_123"}}
-    assert extend._api_client.calls == [("get", "/users/me", {})]
-
-
-@pytest.mark.asyncio
-async def test_execute_tool_supports_raw_post_endpoints_missing_from_sdk_resources():
-    class APIClient:
-        def __init__(self):
-            self.calls = []
-
-        async def post(self, url, data):
-            self.calls.append(("post", url, data))
-            return {"jobId": "job_123"}
-
-    class Extend:
-        def __init__(self):
-            self._api_client = APIClient()
-
-    extend = Extend()
-
-    result = await execute_tool(
-        extend,
-        "trigger_async_predict_expense_data_for_transactions",
-        {"transaction_ids": ["txn_1", "txn_2"]},
-    )
-
-    assert result == {"jobId": "job_123"}
-    assert extend._api_client.calls == [
-        (
-            "post",
-            "/automations/transactions/enrichment",
-            {"transactionIds": ["txn_1", "txn_2"]},
-        )
-    ]
+    assert extend._api_client.calls == [("get", "/users/u_123", {})]

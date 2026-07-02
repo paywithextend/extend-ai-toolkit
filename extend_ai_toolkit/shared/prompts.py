@@ -262,14 +262,6 @@ Optional arguments include:
 The response includes the updated expense category label details.
 """
 
-trigger_async_predict_expense_data_for_transactions_prompt = """
-This tool triggers asynchronous expense-data prediction for one or more transactions.
-It takes the following argument:
-- transaction_ids (List[str]): Transaction IDs to enrich.
-
-The response includes the prediction job response returned by Extend.
-"""
-
 get_organizations_prompt = """
 This tool retrieves the organizations available to the authenticated user.
 It takes no arguments.
@@ -296,54 +288,12 @@ It takes the following argument:
 The response includes profile, preference, organization, and status fields.
 """
 
-get_current_user_prompt = """
-This tool retrieves the authenticated user's profile.
-It takes no arguments.
-
-The response includes profile, preference, organization, and status fields.
-"""
-
 get_expense_policy_prompt = """
 This tool retrieves the raw expense policy text for an organization.
 It takes the following argument:
 - organization_id (str): The organization ID.
 
 The response includes the policy identifier, organization ID, and raw text when available.
-"""
-
-get_spend_by_expense_category_prompt = """
-This tool retrieves spend grouped by expense category or label.
-It supports date, card, recipient, department, category, label, and merchant filters.
-
-The response includes categorized spend values and summary totals.
-"""
-
-get_spend_by_merchant_category_prompt = """
-This tool retrieves spend grouped by merchant category.
-It supports date, card, recipient, department, category, label, and merchant filters.
-
-The response includes categorized spend values and summary totals.
-"""
-
-get_spend_over_time_by_expense_prompt = """
-This tool retrieves spend over time for an expense category or label.
-It supports date, card, recipient, department, category, label, comparison type, and interval filters.
-
-The response includes time-series spend values and summary totals.
-"""
-
-get_spend_over_time_by_merchant_prompt = """
-This tool retrieves spend over time for a merchant category.
-It supports date, card, recipient, department, merchant category, comparison type, and interval filters.
-
-The response includes time-series spend values and summary totals.
-"""
-
-get_spend_vs_prior_period_prompt = """
-This tool retrieves current-vs-prior-period spend comparison.
-It supports date, card, recipient, department, category, label, merchant category, and comparison type filters.
-
-The response includes current and prior period totals, deltas, percentage changes, and transaction counts.
 """
 
 create_receipt_attachment_prompt = """

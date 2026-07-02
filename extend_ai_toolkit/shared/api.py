@@ -92,9 +92,6 @@ class ExtendAPI:
             case ExtendAPITools.UPDATE_TRANSACTION_EXPENSE_DATA.value:
                 output = await update_transaction_expense_data(self.extend, *args, **kwargs)
                 return json.dumps(output)
-            case ExtendAPITools.TRIGGER_ASYNC_PREDICT_EXPENSE_DATA_FOR_TRANSACTIONS.value:
-                output = await trigger_async_predict_expense_data_for_transactions(self.extend, *args, **kwargs)
-                return json.dumps(output)
             case ExtendAPITools.GET_ORGANIZATIONS.value:
                 output = await get_organizations(self.extend, *args, **kwargs)
                 return json.dumps(output)
@@ -104,26 +101,8 @@ class ExtendAPI:
             case ExtendAPITools.GET_USER_DETAILS.value:
                 output = await get_user_details(self.extend, *args, **kwargs)
                 return json.dumps(output)
-            case ExtendAPITools.GET_CURRENT_USER.value:
-                output = await get_current_user(self.extend, *args, **kwargs)
-                return json.dumps(output)
             case ExtendAPITools.GET_EXPENSE_POLICY.value:
                 output = await get_expense_policy(self.extend, *args, **kwargs)
-                return json.dumps(output)
-            case ExtendAPITools.GET_SPEND_BY_EXPENSE_CATEGORY.value:
-                output = await get_spend_by_expense_category(self.extend, *args, **kwargs)
-                return json.dumps(output)
-            case ExtendAPITools.GET_SPEND_BY_MERCHANT_CATEGORY.value:
-                output = await get_spend_by_merchant_category(self.extend, *args, **kwargs)
-                return json.dumps(output)
-            case ExtendAPITools.GET_SPEND_OVER_TIME_BY_EXPENSE.value:
-                output = await get_spend_over_time_by_expense(self.extend, *args, **kwargs)
-                return json.dumps(output)
-            case ExtendAPITools.GET_SPEND_OVER_TIME_BY_MERCHANT.value:
-                output = await get_spend_over_time_by_merchant(self.extend, *args, **kwargs)
-                return json.dumps(output)
-            case ExtendAPITools.GET_SPEND_VS_PRIOR_PERIOD.value:
-                output = await get_spend_vs_prior_period(self.extend, *args, **kwargs)
                 return json.dumps(output)
             case ExtendAPITools.PROPOSE_EXPENSE_CATEGORY_LABEL.value:
                 output = await propose_transaction_expense_data(self.extend, *args, **kwargs)

@@ -10,7 +10,6 @@ from .prompts import (
     cancel_virtual_card_prompt,
     close_virtual_card_prompt,
     count_transactions_prompt,
-    get_current_user_prompt,
     get_transactions_prompt,
     get_transaction_detail_prompt,
     get_credit_cards_prompt,
@@ -21,11 +20,6 @@ from .prompts import (
     get_expense_category_label_prompt,
     get_organization_members_prompt,
     get_organizations_prompt,
-    get_spend_by_expense_category_prompt,
-    get_spend_by_merchant_category_prompt,
-    get_spend_over_time_by_expense_prompt,
-    get_spend_over_time_by_merchant_prompt,
-    get_spend_vs_prior_period_prompt,
     create_expense_category_prompt,
     create_expense_category_label_prompt,
     update_expense_category_prompt,
@@ -33,7 +27,6 @@ from .prompts import (
     get_credit_card_detail_prompt,
     update_transaction_expense_data_prompt,
     get_user_details_prompt,
-    trigger_async_predict_expense_data_for_transactions_prompt,
     create_receipt_attachment_prompt,
     get_automatch_status_prompt,
     automatch_receipts_prompt,
@@ -48,7 +41,6 @@ from .schemas import (
     CountTransactions,
     GetTransactions,
     GetTransactionDetail,
-    GetCurrentUser,
     GetExpensePolicy,
     GetExpenseCategories,
     GetExpenseCategory,
@@ -56,11 +48,6 @@ from .schemas import (
     GetExpenseCategoryLabel,
     GetOrganizationMembers,
     GetOrganizations,
-    GetSpendByExpenseCategory,
-    GetSpendByMerchantCategory,
-    GetSpendOverTimeByExpense,
-    GetSpendOverTimeByMerchant,
-    GetSpendVsPriorPeriod,
     CreateExpenseCategory,
     CreateExpenseCategoryLabel,
     UpdateExpenseCategory,
@@ -68,7 +55,6 @@ from .schemas import (
     GetCreditCardDetail,
     UpdateTransactionExpenseData,
     GetUserDetails,
-    TriggerAsyncPredictExpenseDataForTransactions,
     GetAutomatchStatusSchema,
     AutomatchReceiptsSchema,
     CreateReceiptAttachmentSchema,
@@ -214,21 +200,6 @@ tools: List[Tool] = [
         ],
     ),
     Tool(
-        method=ExtendAPITools.TRIGGER_ASYNC_PREDICT_EXPENSE_DATA_FOR_TRANSACTIONS,
-        description=trigger_async_predict_expense_data_for_transactions_prompt,
-        args_schema=TriggerAsyncPredictExpenseDataForTransactions,
-        required_scope=[
-            Scope(
-                type=Product.AUTOMATIONS,
-                actions={"create": True}
-            ),
-            Scope(
-                type=Product.TRANSACTIONS,
-                actions={"read": True}
-            )
-        ],
-    ),
-    Tool(
         method=ExtendAPITools.GET_EXPENSE_CATEGORIES,
         description=get_expense_categories_prompt,
         args_schema=GetExpenseCategories,
@@ -350,78 +321,12 @@ tools: List[Tool] = [
         ],
     ),
     Tool(
-        method=ExtendAPITools.GET_CURRENT_USER,
-        description=get_current_user_prompt,
-        args_schema=GetCurrentUser,
-        required_scope=[
-            Scope(
-                type=Product.USERS,
-                actions={"read": True}
-            )
-        ],
-    ),
-    Tool(
         method=ExtendAPITools.GET_EXPENSE_POLICY,
         description=get_expense_policy_prompt,
         args_schema=GetExpensePolicy,
         required_scope=[
             Scope(
                 type=Product.EXPENSE_POLICIES,
-                actions={"read": True}
-            )
-        ],
-    ),
-    Tool(
-        method=ExtendAPITools.GET_SPEND_BY_EXPENSE_CATEGORY,
-        description=get_spend_by_expense_category_prompt,
-        args_schema=GetSpendByExpenseCategory,
-        required_scope=[
-            Scope(
-                type=Product.INSIGHTS,
-                actions={"read": True}
-            )
-        ],
-    ),
-    Tool(
-        method=ExtendAPITools.GET_SPEND_BY_MERCHANT_CATEGORY,
-        description=get_spend_by_merchant_category_prompt,
-        args_schema=GetSpendByMerchantCategory,
-        required_scope=[
-            Scope(
-                type=Product.INSIGHTS,
-                actions={"read": True}
-            )
-        ],
-    ),
-    Tool(
-        method=ExtendAPITools.GET_SPEND_OVER_TIME_BY_EXPENSE,
-        description=get_spend_over_time_by_expense_prompt,
-        args_schema=GetSpendOverTimeByExpense,
-        required_scope=[
-            Scope(
-                type=Product.INSIGHTS,
-                actions={"read": True}
-            )
-        ],
-    ),
-    Tool(
-        method=ExtendAPITools.GET_SPEND_OVER_TIME_BY_MERCHANT,
-        description=get_spend_over_time_by_merchant_prompt,
-        args_schema=GetSpendOverTimeByMerchant,
-        required_scope=[
-            Scope(
-                type=Product.INSIGHTS,
-                actions={"read": True}
-            )
-        ],
-    ),
-    Tool(
-        method=ExtendAPITools.GET_SPEND_VS_PRIOR_PERIOD,
-        description=get_spend_vs_prior_period_prompt,
-        args_schema=GetSpendVsPriorPeriod,
-        required_scope=[
-            Scope(
-                type=Product.INSIGHTS,
                 actions={"read": True}
             )
         ],

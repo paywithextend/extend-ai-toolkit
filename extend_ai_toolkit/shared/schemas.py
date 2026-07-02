@@ -429,14 +429,6 @@ class UpdateExpenseCategoryLabel(BaseModel):
     )
 
 
-class TriggerAsyncPredictExpenseDataForTransactions(BaseModel):
-    """Schema for the async transaction expense-data prediction operation."""
-    transaction_ids: List[str] = Field(
-        ...,
-        description="Transaction IDs to enrich with predicted expense data."
-    )
-
-
 class GetOrganizations(BaseModel):
     """Schema for the `get_organizations` operation."""
 
@@ -485,99 +477,11 @@ class GetUserDetails(BaseModel):
     )
 
 
-class GetCurrentUser(BaseModel):
-    """Schema for the `get_current_user` operation."""
-
-
 class GetExpensePolicy(BaseModel):
     """Schema for the `get_expense_policy` operation."""
     organization_id: str = Field(
         ...,
         description="The organization ID whose expense policy should be retrieved."
-    )
-
-
-class InsightsBaseRequest(BaseModel):
-    """Common schema fields for transaction insights operations."""
-    since: Optional[str] = Field(
-        None,
-        description="Start date to filter insights (YYYY-MM-DD)."
-    )
-    until: Optional[str] = Field(
-        None,
-        description="End date to filter insights (YYYY-MM-DD)."
-    )
-    expense_category_id: Optional[str] = Field(
-        None,
-        description="Filter by expense category ID."
-    )
-    expense_label_id: Optional[str] = Field(
-        None,
-        description="Filter by expense label ID."
-    )
-    merchant_category: Optional[str] = Field(
-        None,
-        description="Filter by merchant category."
-    )
-    credit_card_id: Optional[List[str]] = Field(
-        None,
-        description="Filter by credit card IDs."
-    )
-    virtual_card_id: Optional[List[str]] = Field(
-        None,
-        description="Filter by virtual card IDs."
-    )
-    recipient_id: Optional[List[str]] = Field(
-        None,
-        description="Filter by recipient IDs."
-    )
-    departments: Optional[List[str]] = Field(
-        None,
-        description="Filter by departments."
-    )
-    include_graph_data: bool = Field(
-        True,
-        description="Whether to include graph-oriented response fields."
-    )
-
-
-class GetSpendByExpenseCategory(InsightsBaseRequest):
-    """Schema for the `get_spend_by_expense_category` operation."""
-
-
-class GetSpendByMerchantCategory(InsightsBaseRequest):
-    """Schema for the `get_spend_by_merchant_category` operation."""
-
-
-class GetSpendOverTimeByExpense(InsightsBaseRequest):
-    """Schema for the `get_spend_over_time_by_expense` operation."""
-    comparison_type: str = Field(
-        "MOM",
-        description="Period comparison type, such as MOM, WOW, or YOY."
-    )
-    interval: str = Field(
-        "DAY",
-        description="Aggregation interval, such as DAY, WEEK, MONTH, or YEAR."
-    )
-
-
-class GetSpendOverTimeByMerchant(InsightsBaseRequest):
-    """Schema for the `get_spend_over_time_by_merchant` operation."""
-    comparison_type: str = Field(
-        "MOM",
-        description="Period comparison type, such as MOM, WOW, or YOY."
-    )
-    interval: str = Field(
-        "DAY",
-        description="Aggregation interval, such as DAY, WEEK, MONTH, or YEAR."
-    )
-
-
-class GetSpendVsPriorPeriod(InsightsBaseRequest):
-    """Schema for the `get_spend_vs_prior_period` operation."""
-    comparison_type: str = Field(
-        "MOM",
-        description="Period comparison type, such as MOM, WOW, or YOY."
     )
 
 
