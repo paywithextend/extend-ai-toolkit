@@ -1,4 +1,3 @@
-from dotenv import load_dotenv
 from extend import ExtendClient
 
 from .auth import Authorization, create_client_with_auth, create_extend_client
@@ -10,7 +9,13 @@ from .helpers import *
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-load_dotenv()
+try:
+    from dotenv import load_dotenv
+except ImportError:  # pragma: no cover - optional convenience dependency
+    load_dotenv = None
+
+if load_dotenv is not None:
+    load_dotenv()
 
 
 class ExtendAPI:

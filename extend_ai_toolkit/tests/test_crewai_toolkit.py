@@ -1,15 +1,22 @@
-import inspect
-import json
+# ruff: noqa: E402, I001
+
 import re
-from unittest.mock import patch, Mock, AsyncMock
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from pydantic import BaseModel
-from crewai import Agent, Task, Crew, LLM
-from crewai.tools import BaseTool
 
-from extend_ai_toolkit.crewai.toolkit import ExtendCrewAIToolkit
-from extend_ai_toolkit.shared import Configuration, ExtendAPITools, Tool, ExtendAPI
+crewai = pytest.importorskip("crewai")  # noqa: E402
+crewai_tools = pytest.importorskip("crewai.tools")  # noqa: E402
+
+Agent = crewai.Agent
+Task = crewai.Task
+Crew = crewai.Crew
+LLM = crewai.LLM
+BaseTool = crewai_tools.BaseTool
+
+from extend_ai_toolkit.crewai.toolkit import ExtendCrewAIToolkit  # noqa: E402
+from extend_ai_toolkit.shared import Configuration, ExtendAPI, ExtendAPITools, Tool  # noqa: E402
 
 
 # Define schema classes needed for testing
@@ -237,4 +244,4 @@ def test_create_crew(toolkit):
     assert isinstance(crew, Crew)
     assert len(crew.agents) == 1
     assert len(crew.tasks) == 1
-    assert crew.verbose is True 
+    assert crew.verbose is True
