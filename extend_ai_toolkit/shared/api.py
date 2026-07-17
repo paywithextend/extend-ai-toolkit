@@ -1,4 +1,3 @@
-from dotenv import load_dotenv
 from extend import ExtendClient
 
 from .auth import Authorization, create_client_with_auth, create_extend_client
@@ -10,7 +9,13 @@ from .helpers import *
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-load_dotenv()
+try:
+    from dotenv import load_dotenv
+except ImportError:  # pragma: no cover - optional convenience dependency
+    load_dotenv = None
+
+if load_dotenv is not None:
+    load_dotenv()
 
 
 class ExtendAPI:
@@ -48,6 +53,9 @@ class ExtendAPI:
             case ExtendAPITools.GET_TRANSACTIONS.value:
                 output = await get_transactions(self.extend, *args, **kwargs)
                 return format_transactions_list(output)
+            case ExtendAPITools.COUNT_TRANSACTIONS.value:
+                output = await count_transactions(self.extend, *args, **kwargs)
+                return json.dumps(output)
             case ExtendAPITools.GET_TRANSACTION_DETAIL.value:
                 output = await get_transaction_detail(self.extend, *args, **kwargs)
                 return format_transaction_details(output)
@@ -66,6 +74,9 @@ class ExtendAPI:
             case ExtendAPITools.GET_EXPENSE_CATEGORY_LABELS.value:
                 output = await get_expense_category_labels(self.extend, *args, **kwargs)
                 return json.dumps(output)
+            case ExtendAPITools.GET_EXPENSE_CATEGORY_LABEL.value:
+                output = await get_expense_category_label(self.extend, *args, **kwargs)
+                return json.dumps(output)
             case ExtendAPITools.CREATE_EXPENSE_CATEGORY.value:
                 output = await create_expense_category(self.extend, *args, **kwargs)
                 return json.dumps(output)
@@ -80,6 +91,18 @@ class ExtendAPI:
                 return json.dumps(output)
             case ExtendAPITools.UPDATE_TRANSACTION_EXPENSE_DATA.value:
                 output = await update_transaction_expense_data(self.extend, *args, **kwargs)
+                return json.dumps(output)
+            case ExtendAPITools.GET_ORGANIZATIONS.value:
+                output = await get_organizations(self.extend, *args, **kwargs)
+                return json.dumps(output)
+            case ExtendAPITools.GET_ORGANIZATION_MEMBERS.value:
+                output = await get_organization_members(self.extend, *args, **kwargs)
+                return json.dumps(output)
+            case ExtendAPITools.GET_USER_DETAILS.value:
+                output = await get_user_details(self.extend, *args, **kwargs)
+                return json.dumps(output)
+            case ExtendAPITools.GET_EXPENSE_POLICY.value:
+                output = await get_expense_policy(self.extend, *args, **kwargs)
                 return json.dumps(output)
             case ExtendAPITools.PROPOSE_EXPENSE_CATEGORY_LABEL.value:
                 output = await propose_transaction_expense_data(self.extend, *args, **kwargs)

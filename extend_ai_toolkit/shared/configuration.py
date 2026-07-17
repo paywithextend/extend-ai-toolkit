@@ -17,7 +17,10 @@ VALID_SCOPES = [
     'expense_categories.create',
     'expense_categories.update',
     'receipt_attachments.read',
-    'receipt_attachments.create'
+    'receipt_attachments.create',
+    'organizations.read',
+    'users.read',
+    'expense_policies.read',
 ]
 
 
@@ -81,8 +84,15 @@ class Configuration(BaseModel):
                 validated_tools.append(validate_tool_spec(tool_spec))
 
             for product, action_str in validated_tools:
-                scope = Scope(product, Actions(**{action_str: True}))
-                configuration.add_scope(scope)
+                existing_scope = next(
+                    filter(lambda x: x.type == product, configuration.scope or []),
+                    None
+                )
+                if existing_scope:
+                    existing_scope.actions[action_str] = True
+                else:
+                    scope = Scope(product, Actions(**{action_str: True}))
+                    configuration.add_scope(scope)
         return configuration
 
 
