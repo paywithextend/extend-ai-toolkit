@@ -1,0 +1,66 @@
+name: Toolkit safety and packaging
+on:
+  pull_request:
+  push:
+    branches: [development]
+permissions:
+  contents: read
+jobs:
+  adapters:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11', '3.12', '3.13']
+        extra: [base, mcp, langchain, openai, terminal-openai, terminal-anthropic]
+    env:
+      OTEL_SDK_DISABLED: 'true'
+      LANGSMITH_TRACING: 'false'
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: ${{ matrix.python }}
+      # Temporary review prerequisite: fixed SDK PR 29, exact immutable source.
+      # Runtime metadata always names the registry version. Remove this checkout after 3.0.0 publishes.
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          repository: paywithextend/extend-python
+          ref: c092c8414a0d45a8a7aa56765e792520e20d6b31
+          path: .sdk-source
+      - run: |
+          python -m pip install build==1.6.1
+          python -m build --wheel .sdk-source --outdir "$RUNNER_TEMP/sdk-wheel"
+          sha256sum "$RUNNER_TEMP"/sdk-wheel/*.whl
+          python -m pip install "$RUNNER_TEMP"/sdk-wheel/*.whl
+      - name: Fresh resolution of the selected extra
+        env:
+          EXTRA: ${{ matrix.extra }}
+        run: |
+          if [ "$EXTRA" = base ]; then TARGET=.; else TARGET=".[$EXTRA]"; fi
+          python -m pip install "$TARGET" pytest==9.2.0 pytest-asyncio==1.4.1 ruff==0.17.3
+          python -m pip check
+      - run: make lint
+      - run: make test
+      - run: python tools/check_advisories.py
+      - run: python -m build
+      - run: |
+          python -m pip install --force-reinstall --no-deps dist/*.whl
+          python -I -c "import extend_ai_toolkit as t; assert t.__version__ == '2.0.0'; assert len(t.list_tool_specs()) == 16"
+  constrained:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.11'
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          repository: paywithextend/extend-python
+          ref: c092c8414a0d45a8a7aa56765e792520e20d6b31
+          path: .sdk-source
+      - run: |
+          python -m pip install ./.sdk-source
+          python -m pip install '.[dev,mcp,langchain,openai,terminal-anthropic]' -c constraints/adapters.txt
+          python -m pip check
+          make test

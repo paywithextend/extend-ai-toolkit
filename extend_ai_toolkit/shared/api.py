@@ -1,126 +1,58 @@
+"""Framework adapters delegate to the same host-policy-checked executor."""
+
+import json
+
 from extend import ExtendClient
 
+from ..policy import ExecutionPolicy
 from .auth import Authorization, create_client_with_auth, create_extend_client
-
-from .enums import ExtendAPITools
-from .functions import *
-from .helpers import *
-
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-
-try:
-    from dotenv import load_dotenv
-except ImportError:  # pragma: no cover - optional convenience dependency
-    load_dotenv = None
-
-if load_dotenv is not None:
-    load_dotenv()
+from .configuration import Configuration
 
 
 class ExtendAPI:
-    """Wrapper around Extend API"""
-
-    def __init__(
-            self,
-            extend: ExtendClient,
-    ):
-
+    def __init__(self, extend: ExtendClient, *, policy: ExecutionPolicy | None = None):
         self.extend = extend
-    
-    @classmethod
-    def from_auth(cls, auth: Authorization) -> "ExtendAPI":
-        return cls(extend=create_client_with_auth(auth))
+        self.policy = policy if policy is not None else ExecutionPolicy.read_only()
 
     @classmethod
-    def default_instance(cls, api_key: str, api_secret: str) -> "ExtendAPI":
-        return cls(extend=create_extend_client(api_key=api_key, api_secret=api_secret))
+    def from_auth(
+        cls,
+        auth: Authorization,
+        *,
+        environment: str | None = None,
+        policy: ExecutionPolicy | None = None,
+    ):
+        return cls(create_client_with_auth(auth, environment=environment), policy=policy)
 
-    async def run(self, tool: str, *args, **kwargs) -> str:
-        match ExtendAPITools(tool).value:
-            case ExtendAPITools.GET_VIRTUAL_CARDS.value:
-                output = await get_virtual_cards(self.extend, *args, **kwargs)
-                return format_virtual_cards_list(output)
-            case ExtendAPITools.GET_VIRTUAL_CARD_DETAIL.value:
-                output = await get_virtual_card_detail(self.extend, *args, **kwargs)
-                return format_virtual_card_details(output)
-            case ExtendAPITools.CANCEL_VIRTUAL_CARD.value:
-                output = await cancel_virtual_card(self.extend, *args, **kwargs)
-                return format_canceled_virtual_card(output)
-            case ExtendAPITools.CLOSE_VIRTUAL_CARD.value:
-                output = await close_virtual_card(self.extend, *args, **kwargs)
-                return format_closed_virtual_card(output)
-            case ExtendAPITools.GET_TRANSACTIONS.value:
-                output = await get_transactions(self.extend, *args, **kwargs)
-                return format_transactions_list(output)
-            case ExtendAPITools.COUNT_TRANSACTIONS.value:
-                output = await count_transactions(self.extend, *args, **kwargs)
-                return json.dumps(output)
-            case ExtendAPITools.GET_TRANSACTION_DETAIL.value:
-                output = await get_transaction_detail(self.extend, *args, **kwargs)
-                return format_transaction_details(output)
-            case ExtendAPITools.GET_CREDIT_CARDS.value:
-                output = await get_credit_cards(self.extend, *args, **kwargs)
-                return format_credit_cards_list(output)
-            case ExtendAPITools.GET_CREDIT_CARD_DETAIL.value:
-                output = await get_credit_card_detail(self.extend, *args, **kwargs)
-                return format_credit_card_detail(output)
-            case ExtendAPITools.GET_EXPENSE_CATEGORIES.value:
-                output = await get_expense_categories(self.extend, *args, **kwargs)
-                return json.dumps(output)
-            case ExtendAPITools.GET_EXPENSE_CATEGORY.value:
-                output = await get_expense_category(self.extend, *args, **kwargs)
-                return json.dumps(output)
-            case ExtendAPITools.GET_EXPENSE_CATEGORY_LABELS.value:
-                output = await get_expense_category_labels(self.extend, *args, **kwargs)
-                return json.dumps(output)
-            case ExtendAPITools.GET_EXPENSE_CATEGORY_LABEL.value:
-                output = await get_expense_category_label(self.extend, *args, **kwargs)
-                return json.dumps(output)
-            case ExtendAPITools.CREATE_EXPENSE_CATEGORY.value:
-                output = await create_expense_category(self.extend, *args, **kwargs)
-                return json.dumps(output)
-            case ExtendAPITools.CREATE_EXPENSE_CATEGORY_LABEL.value:
-                output = await create_expense_category_label(self.extend, *args, **kwargs)
-                return json.dumps(output)
-            case ExtendAPITools.UPDATE_EXPENSE_CATEGORY.value:
-                output = await update_expense_category(self.extend, *args, **kwargs)
-                return json.dumps(output)
-            case ExtendAPITools.UPDATE_EXPENSE_CATEGORY_LABEL.value:
-                output = await update_expense_category_label(self.extend, *args, **kwargs)
-                return json.dumps(output)
-            case ExtendAPITools.UPDATE_TRANSACTION_EXPENSE_DATA.value:
-                output = await update_transaction_expense_data(self.extend, *args, **kwargs)
-                return json.dumps(output)
-            case ExtendAPITools.GET_ORGANIZATIONS.value:
-                output = await get_organizations(self.extend, *args, **kwargs)
-                return json.dumps(output)
-            case ExtendAPITools.GET_ORGANIZATION_MEMBERS.value:
-                output = await get_organization_members(self.extend, *args, **kwargs)
-                return json.dumps(output)
-            case ExtendAPITools.GET_USER_DETAILS.value:
-                output = await get_user_details(self.extend, *args, **kwargs)
-                return json.dumps(output)
-            case ExtendAPITools.GET_EXPENSE_POLICY.value:
-                output = await get_expense_policy(self.extend, *args, **kwargs)
-                return json.dumps(output)
-            case ExtendAPITools.PROPOSE_EXPENSE_CATEGORY_LABEL.value:
-                output = await propose_transaction_expense_data(self.extend, *args, **kwargs)
-                return json.dumps(output)
-            case ExtendAPITools.CONFIRM_EXPENSE_CATEGORY_LABEL.value:
-                output = await confirm_transaction_expense_data(self.extend, *args, **kwargs)
-                return json.dumps(output)
-            case ExtendAPITools.CREATE_RECEIPT_ATTACHMENT.value:
-                output = await create_receipt_attachment(self.extend, *args, **kwargs)
-                return json.dumps(output)
-            case ExtendAPITools.AUTOMATCH_RECEIPTS.value:
-                output = await automatch_receipts(self.extend, *args, **kwargs)
-                return json.dumps(output)
-            case ExtendAPITools.GET_AUTOMATCH_STATUS.value:
-                output = await get_automatch_status(self.extend, *args, **kwargs)
-                return json.dumps(output)
-            case ExtendAPITools.SEND_RECEIPT_REMINDER.value:
-                output = await send_receipt_reminder(self.extend, *args, **kwargs)
-                return json.dumps(output)
-            case _:
-                raise ValueError(f"Invalid tool {tool}")
+    @classmethod
+    def default_instance(
+        cls,
+        api_key: str,
+        api_secret: str,
+        *,
+        environment: str | None = None,
+        policy: ExecutionPolicy | None = None,
+    ):
+        return cls(
+            create_extend_client(api_key, api_secret, environment=environment), policy=policy
+        )
+
+    def restricted_to(self, configuration: Configuration):
+        return type(self)(self.extend, policy=self.policy.restrict(configuration))
+
+    async def execute(self, tool: str, arguments: dict | None = None):
+        from ..core import execute_tool
+
+        return await execute_tool(self.extend, tool, arguments, policy=self.policy)
+
+    async def run(self, tool: str, **kwargs) -> str:
+        return json.dumps(await self.execute(tool, kwargs), ensure_ascii=False, allow_nan=False)
+
+    async def aclose(self):
+        await self.extend.aclose()
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *exc_info):
+        await self.aclose()

@@ -1,27 +1,28 @@
 import os
-from agents import Agent, Runner
-from dotenv import load_dotenv
+
+from agents import Agent, RunConfig, Runner
 
 from extend_ai_toolkit.openai.toolkit import ExtendOpenAIToolkit
-from extend_ai_toolkit.shared import Configuration, Scope, Product, Actions
-    
+from extend_ai_toolkit.shared import Actions, Configuration, Product, Scope
+
 # Load environment variables
-load_dotenv()
+
 
 api_key = os.environ.get("EXTEND_API_KEY")
 api_secret = os.environ.get("EXTEND_API_SECRET")
+
 
 async def main():
     extend_openai_toolkit = ExtendOpenAIToolkit.default_instance(
         api_key,
         api_secret,
         Configuration(
-        scope=[
-            Scope(Product.VIRTUAL_CARDS, actions=Actions(read=True)),
-            Scope(Product.CREDIT_CARDS, actions=Actions(read=True)),
-            Scope(Product.TRANSACTIONS, actions=Actions(read=True)),
-        ]
-        )  
+            scope=[
+                Scope(Product.VIRTUAL_CARDS, actions=Actions(read=True)),
+                Scope(Product.CREDIT_CARDS, actions=Actions(read=True)),
+                Scope(Product.TRANSACTIONS, actions=Actions(read=True)),
+            ]
+        ),
     )
 
     extend_agent = Agent(
@@ -35,12 +36,18 @@ async def main():
     print("Welcome to the Extend OpenAI Agent! Type 'quit' to exit.")
     while True:
         user_input = input("\nYour question: ").strip()
-        if user_input.lower() == 'quit':
+        if user_input.lower() == "quit":
             break
-            
-        response = await Runner.run(extend_agent, user_input)
+
+        response = await Runner.run(
+            extend_agent,
+            user_input,
+            run_config=RunConfig(tracing_disabled=True, trace_include_sensitive_data=False),
+        )
         print("Agent response:", response.final_output)
+
 
 if __name__ == "__main__":
     import asyncio
+
     asyncio.run(main())

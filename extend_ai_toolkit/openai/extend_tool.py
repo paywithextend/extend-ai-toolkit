@@ -33,5 +33,5 @@ def ExtendTool(api: ExtendAPI, tool: Tool) -> FunctionTool:
         description=tool.description,
         params_json_schema=parameters,
         on_invoke_tool=on_invoke_tool,
-        strict_json_schema=False
+        strict_json_schema=False,
     )

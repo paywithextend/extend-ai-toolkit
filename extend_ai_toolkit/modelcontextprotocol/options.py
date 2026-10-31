@@ -1,74 +1,33 @@
+"""Explicit local server configuration with read-only defaults."""
+
+import argparse
 import os
+
+from ..shared.configuration import VALID_SCOPES, Configuration
 
 
 def validate_options(cls):
-    original_init = cls.__init__
-
-    def new_init(self, *args, **kwargs):
-        original_init(self, *args, **kwargs)
-
-        # Perform validation after initialization
-        if not self.api_key:
-            raise ValueError(
-                'Extend API key not provided. Please either pass it as an argument --api-key=$KEY or set the EXTEND_API_KEY environment variable.'
-            )
-        elif not self.api_key.startswith("apik_"):
-            raise ValueError('Extend API key must start with "apik_".')
-
-        if not self.api_secret:
-            raise ValueError(
-                'Extend API key not provided. Please either pass it as an argument --api-key=$KEY or set the EXTEND_API_SECRET environment variable.'
-            )
-
-        if not self.tools:
-            raise ValueError('The --tools argument must be provided.')
-
-    cls.__init__ = new_init
     return cls
 
 
-@validate_options
 class Options:
-    ACCEPTED_ARGS = ['api-key', 'api-secret', 'tools']
-
-    def __init__(self, tools, api_key, api_secret):
-        self.tools = tools
-        self.api_key = api_key
-        self.api_secret = api_secret
+    def __init__(self, tools=None, api_key=None, api_secret=None, environment=None):
+        self.tools = (
+            tools if tools is not None else ",".join(s for s in VALID_SCOPES if s.endswith(".read"))
+        )
+        Configuration.from_tool_str(self.tools)
+        self.api_key = api_key or os.environ.get("EXTEND_API_KEY")
+        self.api_secret = api_secret or os.environ.get("EXTEND_API_SECRET")
+        self.environment = environment or os.environ.get("ENV")
+        if not self.api_key or not self.api_secret:
+            raise ValueError("Set EXTEND_API_KEY and EXTEND_API_SECRET")
+        if self.environment not in {"stage", "prod"}:
+            raise ValueError("Select --environment=stage or --environment=prod explicitly")
 
     @staticmethod
-    def from_args(args: list[str], valid_tools: list[str]) -> "Options":
-        tools = ""
-        api_key = None
-        api_secret = None
-
-        for arg in args:
-            if arg.startswith("--"):
-                arg_body = arg[2:]
-                if "=" not in arg_body:
-                    raise ValueError(f"Argument {arg} is not in --key=value format.")
-                key, value = arg_body.split("=", 1)
-                match key:
-                    case "tools":
-                        tools = value
-                    case "api-key":
-                        api_key = value
-                    case "api-secret":
-                        api_secret = value
-                    case _:
-                        raise ValueError(
-                            f"Invalid argument: {key}. Accepted arguments are: {', '.join(Options.ACCEPTED_ARGS)}"
-                        )
-
-        for tool in tools.split(","):
-            if tool.strip() == "all":
-                continue
-            if tool.strip() not in valid_tools:
-                raise ValueError(
-                    f"Invalid tool: {tool}. Accepted tools are: {', '.join(valid_tools)}"
-                )
-
-        api_key = api_key or os.environ.get("EXTEND_API_KEY")
-        api_secret = api_secret or os.environ.get("EXTEND_API_SECRET")
-
-        return Options(tools, api_key, api_secret)
+    def from_args(args, valid_tools=None):
+        parser = argparse.ArgumentParser(description="Extend local read-only MCP server")
+        parser.add_argument("--tools")
+        parser.add_argument("--environment", choices=("stage", "prod"))
+        # Credentials belong in the environment, not process arguments/history.
+        return Options(**vars(parser.parse_args(args)))

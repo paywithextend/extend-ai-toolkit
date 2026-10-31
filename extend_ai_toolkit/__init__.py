@@ -1,10 +1,14 @@
 from .__version__ import __version__ as _version
 from .core import ToolSpec, execute_tool, list_tool_specs
+from .policy import ApprovalRequest, ExecutionPolicy, ToolPermissionError
 
 __version__ = _version
 
 __all__ = [
     "ToolSpec",
+    "ExecutionPolicy",
+    "ApprovalRequest",
+    "ToolPermissionError",
     "execute_tool",
     "list_tool_specs",
     "ExtendLangChainToolkit",
