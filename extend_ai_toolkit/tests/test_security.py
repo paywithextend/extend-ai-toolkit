@@ -244,3 +244,19 @@ async def test_upload_without_handler_does_not_open_file(client, tmp_path):
             {"file_path": "missing.pdf", "transaction_id": "t"},
             policy=policy(receipt_root=tmp_path),
         )
+
+def test_cli_defaults_and_explicit_environment(monkeypatch):
+    pytest.importorskip("mcp")
+    import importlib.metadata
+    if importlib.metadata.version("mcp").split(".")[0] != "2":
+        pytest.skip("MCP 2 extra tested separately")
+    from extend_ai_toolkit.modelcontextprotocol.options import Options
+    monkeypatch.setenv("EXTEND_API_KEY", "synthetic")
+    monkeypatch.setenv("EXTEND_API_SECRET", "synthetic")
+    monkeypatch.delenv("ENV", raising=False)
+    with pytest.raises(ValueError):
+        Options.from_args([])
+    options = Options.from_args(["--environment=stage"])
+    assert ExecutionPolicy.from_configuration(Configuration.from_tool_str(options.tools)).allowed_tools == ExecutionPolicy.read_only().allowed_tools
+    with pytest.raises(SystemExit):
+        Options.from_args(["--api-secret=never-accept-process-credentials"])

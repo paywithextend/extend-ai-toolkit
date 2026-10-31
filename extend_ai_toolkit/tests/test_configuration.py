@@ -6,9 +6,9 @@ from typing import List
 import pytest
 
 from extend_ai_toolkit.shared import (
+    Actions,
     Configuration,
     Product,
-    Actions, 
     tools,
 )
 

@@ -1,9 +1,5 @@
+import tomllib
 from pathlib import Path
-
-try:
-    import tomllib
-except ModuleNotFoundError:  # pragma: no cover - Python 3.10 compatibility
-    import tomli as tomllib  # type: ignore[import-not-found]
 
 
 def _pyproject():
@@ -14,7 +10,7 @@ def _pyproject():
 def test_base_install_excludes_framework_runtime_dependencies():
     dependencies = _pyproject()["project"]["dependencies"]
 
-    assert "paywithextend==2.0.0" in dependencies
+    assert "paywithextend==3.0.0" in dependencies
     assert not any(
         dependency.startswith(
             (
