@@ -1,3 +1,5 @@
+> Version 2 development: read [MIGRATION.md](MIGRATION.md) before using older examples below. Python 3.11+, explicit environment selection, host-enforced write approval and local stdio are required. The fixed SDK release and stacked contract/client changes are release prerequisites.
+
 # Extend AI Toolkit 
 
 ## Overview

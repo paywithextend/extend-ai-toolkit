@@ -7,13 +7,14 @@ or CrewAI adapter dependencies.
 
 from __future__ import annotations
 
+import copy
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any, Callable
+from typing import Any
 
+from .policy import ExecutionPolicy, ToolPermissionError
+from .receipts import snapshot_receipt
 from .shared import functions
-from .shared.configuration import Configuration
-from .shared.enums import ExtendAPITools
 from .shared.tools import Tool, tools
 
 _ACTION_ORDER = ("read", "create", "update", "delete")
@@ -36,61 +37,22 @@ class ToolSpec:
     side_effect_class: str
 
 
-_RAW_FUNCTIONS: dict[ExtendAPITools, Callable[..., Any]] = {
-    ExtendAPITools.GET_VIRTUAL_CARDS: functions.get_virtual_cards,
-    ExtendAPITools.GET_VIRTUAL_CARD_DETAIL: functions.get_virtual_card_detail,
-    ExtendAPITools.CANCEL_VIRTUAL_CARD: functions.cancel_virtual_card,
-    ExtendAPITools.CLOSE_VIRTUAL_CARD: functions.close_virtual_card,
-    ExtendAPITools.GET_CREDIT_CARDS: functions.get_credit_cards,
-    ExtendAPITools.GET_CREDIT_CARD_DETAIL: functions.get_credit_card_detail,
-    ExtendAPITools.GET_TRANSACTIONS: functions.get_transactions,
-    ExtendAPITools.COUNT_TRANSACTIONS: functions.count_transactions,
-    ExtendAPITools.GET_TRANSACTION_DETAIL: functions.get_transaction_detail,
-    ExtendAPITools.UPDATE_TRANSACTION_EXPENSE_DATA: (
-        functions.update_transaction_expense_data
-    ),
-    ExtendAPITools.GET_EXPENSE_CATEGORIES: functions.get_expense_categories,
-    ExtendAPITools.GET_EXPENSE_CATEGORY: functions.get_expense_category,
-    ExtendAPITools.GET_EXPENSE_CATEGORY_LABELS: functions.get_expense_category_labels,
-    ExtendAPITools.GET_EXPENSE_CATEGORY_LABEL: functions.get_expense_category_label,
-    ExtendAPITools.CREATE_EXPENSE_CATEGORY: functions.create_expense_category,
-    ExtendAPITools.CREATE_EXPENSE_CATEGORY_LABEL: (
-        functions.create_expense_category_label
-    ),
-    ExtendAPITools.UPDATE_EXPENSE_CATEGORY: functions.update_expense_category,
-    ExtendAPITools.UPDATE_EXPENSE_CATEGORY_LABEL: (
-        functions.update_expense_category_label
-    ),
-    ExtendAPITools.GET_ORGANIZATIONS: functions.get_organizations,
-    ExtendAPITools.GET_ORGANIZATION_MEMBERS: functions.get_organization_members,
-    ExtendAPITools.GET_USER_DETAILS: functions.get_user_details,
-    ExtendAPITools.GET_EXPENSE_POLICY: functions.get_expense_policy,
-    ExtendAPITools.PROPOSE_EXPENSE_CATEGORY_LABEL: (
-        functions.propose_transaction_expense_data
-    ),
-    ExtendAPITools.CONFIRM_EXPENSE_CATEGORY_LABEL: (
-        functions.confirm_transaction_expense_data
-    ),
-    ExtendAPITools.CREATE_RECEIPT_ATTACHMENT: functions.create_receipt_attachment,
-    ExtendAPITools.AUTOMATCH_RECEIPTS: functions.automatch_receipts,
-    ExtendAPITools.GET_AUTOMATCH_STATUS: functions.get_automatch_status,
-    ExtendAPITools.SEND_RECEIPT_REMINDER: functions.send_receipt_reminder,
-}
+def _catalog(catalog):
+    # A caller catalog only narrows names; its schemas/effect claims are never trusted.
+    if catalog is None:
+        return list(tools)
+    names = {tool.name for tool in catalog}
+    if names - {tool.name for tool in tools}:
+        raise ValueError("Unknown catalog tool")
+    return [tool for tool in tools if tool.name in names]
 
 
-def list_tool_specs(
-    configuration: Configuration | None = None,
-    *,
-    catalog: Sequence[Tool] | None = None,
-) -> list[ToolSpec]:
-    """Return framework-neutral tool metadata for the configured tools."""
-    selected_catalog = list(tools if catalog is None else catalog)
-    selected_tools = (
-        selected_catalog
-        if configuration is None
-        else configuration.allowed_tools(selected_catalog)
-    )
-    return [_tool_spec(tool) for tool in selected_tools]
+def list_tool_specs(configuration=None, *, catalog=None, policy=None) -> list[ToolSpec]:
+    """Discover exactly the tools permitted by a host policy and optional scope filter."""
+    policy = policy if policy is not None else ExecutionPolicy.read_only()
+    if configuration is not None:
+        policy = policy.restrict(configuration)
+    return [_tool_spec(tool) for tool in _catalog(catalog) if tool.name in policy.allowed_tools]
 
 
 async def execute_tool(
@@ -98,18 +60,43 @@ async def execute_tool(
     tool_name: str,
     arguments: Mapping[str, Any] | None = None,
     *,
-    catalog: Sequence[Tool] | None = None,
+    catalog=None,
+    policy: ExecutionPolicy | None = None,
 ) -> Any:
-    """Validate and execute a raw Extend tool, returning structured API data."""
-    tool = _tool_by_name(tool_name, tools if catalog is None else catalog)
+    """Validate, authorize and execute one invocation without model-granted authority."""
+    tool = _tool_by_name(tool_name, _catalog(catalog))
     if tool is None:
-        raise ValueError(f"Unknown Extend tool: {tool_name}")
-    function = _RAW_FUNCTIONS.get(tool.method)
-    if function is None:
-        raise ValueError(f"Extend tool has no executor: {tool_name}")
-
-    validated_arguments = _validate_arguments(tool, arguments or {})
-    return await function(extend=extend, **validated_arguments)
+        raise ValueError("Unknown Extend tool")
+    policy = policy if policy is not None else ExecutionPolicy.read_only()
+    if tool.name not in policy.allowed_tools:
+        raise ToolPermissionError("Tool is not permitted by the host allowlist")
+    validated = _validate_arguments(tool, copy.deepcopy(dict(arguments or {})))
+    if tool.side_effect_class == "file_upload":
+        if not policy.actor_id or policy.approve is None:
+            raise ToolPermissionError("Host approval is required before reading receipt files")
+        snapshot = snapshot_receipt(policy, validated["file_path"])
+        try:
+            proposal = {
+                **validated,
+                "file_sha256": snapshot.sha256,
+                "file_size": snapshot.size,
+                "content_type": snapshot.content_type,
+            }
+            await policy.authorize(tool.name, tool.side_effect_class, proposal)
+            data = (
+                {"transactionId": validated["transaction_id"]}
+                if validated.get("transaction_id")
+                else {}
+            )
+            return await extend.api_client.post_multipart(
+                "/receiptattachments",
+                data=data,
+                files={"file": (snapshot.filename, snapshot.file, snapshot.content_type)},
+            )
+        finally:
+            snapshot.close()
+    await policy.authorize(tool.name, tool.side_effect_class, validated)
+    return await getattr(functions, tool.name)(extend=extend, **validated)
 
 
 def _tool_by_name(tool_name: str, catalog: Sequence[Tool]) -> Tool | None:
@@ -133,7 +120,7 @@ def _tool_spec(tool: Tool) -> ToolSpec:
         product=product,
         products=products,
         actions=actions,
-        side_effect_class=_side_effect_class(actions),
+        side_effect_class=tool.side_effect_class,
     )
 
 
@@ -169,21 +156,9 @@ def _combined_actions(required_scopes: Sequence[dict[str, Any]]) -> tuple[str, .
     return tuple(ordered)
 
 
-def _side_effect_class(actions: Sequence[str]) -> str:
-    if any(action in {"create", "update", "delete"} for action in actions):
-        return "external_write"
-    return "read_only"
-
-
 def _schema_for(tool: Tool) -> dict[str, Any]:
-    schema_model = tool.args_schema
-    if hasattr(schema_model, "model_json_schema"):
-        return schema_model.model_json_schema()
-    return schema_model.schema()
+    return tool.args_schema.model_json_schema()
 
 
 def _validate_arguments(tool: Tool, arguments: Mapping[str, Any]) -> dict[str, Any]:
-    validated = tool.args_schema(**dict(arguments))
-    if hasattr(validated, "model_dump"):
-        return validated.model_dump(exclude_none=True)
-    return validated.dict(exclude_none=True)
+    return tool.args_schema.model_validate(arguments).model_dump(exclude_none=True)

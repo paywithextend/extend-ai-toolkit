@@ -1,7 +1,8 @@
 from typing import Any
-import asyncio
+
 from crewai.tools import BaseTool
-from pydantic import Field, ConfigDict
+from pydantic import ConfigDict, Field
+
 from extend_ai_toolkit.shared import ExtendAPI, Tool
 
 
@@ -19,7 +20,7 @@ class ExtendCrewAITool(BaseTool):
             description=tool.description,
             args_schema=tool.args_schema,
             extend_api=api,
-            method=tool.method.value
+            method=tool.method.value,
         )
 
     async def _arun(self, **kwargs: Any) -> str:
@@ -27,10 +28,5 @@ class ExtendCrewAITool(BaseTool):
         return await self.extend_api.run(self.method, **kwargs)
 
     def _run(self, **kwargs: Any) -> str:
-        """Run the tool synchronously by creating an event loop."""
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            return loop.run_until_complete(self._arun(**kwargs))
-        finally:
-            loop.close()
+        """Require the asynchronous API so the pooled SDK keeps one event loop."""
+        raise NotImplementedError("Use CrewAI asynchronous tool execution")

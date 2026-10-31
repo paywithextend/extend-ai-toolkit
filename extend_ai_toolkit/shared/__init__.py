@@ -9,9 +9,10 @@ from .auth import (
     get_basic_auth_class,
     supports_authorization,
 )
-from .configuration import Configuration, Product, Scope, Actions, validate_tool_spec
-from .enums import ExtendAPITools, Agent, Action
+from .configuration import Configuration, validate_tool_spec
+from .enums import Action, Agent, ExtendAPITools, Product
 from .interfaces import AgentToolInterface
+from .models import Actions, Scope
 from .tools import Tool, tools
 
 __all__ = [

@@ -1,65 +1,62 @@
-name: Release
-
+name: Publish reviewed toolkit
 on:
-  push:
-    branches:
-      - main
-
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Reviewed version tag reachable from development (for example v2.0.0)
+        required: true
+        type: string
 permissions:
-  contents: write
-
+  contents: read
+concurrency:
+  group: toolkit-release-${{ inputs.tag }}
+  cancel-in-progress: false
 jobs:
   build:
+    if: github.ref == 'refs/heads/development'
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
-          python-version: 3.11
-
-      - name: Install dependencies
-        run: sudo apt-get install make
-
-      - name: Create virtual environment
-        run: make venv
-
-      - name: Build package
-        run: |
-          set -x
-          source venv/bin/activate
-          rm -rf build dist *.egg-info
-          make build ENV=stage
-
-      - name: Extract Version from version file
-        id: get_version
-        run: |
-          VERSION=$(grep -Po '^__version__\s*=\s*"\K[^"]+' extend_ai_toolkit/__version__.py)
-          echo "Version extracted: $VERSION"
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-
-      - name: Create GitHub Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
-          tag_name: v${{ steps.get_version.outputs.version }}
-          release_name: v${{ steps.get_version.outputs.version }}
-          draft: false
-          prerelease: false
-
-      - name: Install Twine
-        run: |
-          source venv/bin/activate
-          pip install twine
-
-      - name: Upload to PyPI
+          python-version: '3.11'
+      - name: Validate and check out the reviewed release tag
         env:
-          PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+          RELEASE_TAG: ${{ inputs.tag }}
         run: |
-          source venv/bin/activate
-          twine upload dist/* -u __token__ -p $PYPI_API_TOKEN
+          python -c "import os,re; assert re.fullmatch(r'v[0-9]+\.[0-9]+\.[0-9]+', os.environ['RELEASE_TAG'])"
+          git fetch origin "refs/tags/$RELEASE_TAG:refs/tags/$RELEASE_TAG"
+          git merge-base --is-ancestor "$RELEASE_TAG^{commit}" origin/development
+          git checkout --detach "$RELEASE_TAG"
+          python -c "import ast,os,pathlib; version=ast.literal_eval(ast.parse(pathlib.Path('extend_ai_toolkit/__version__.py').read_text()).body[0].value); assert 'v'+version == os.environ['RELEASE_TAG']"
+      - run: python -m pip install ".[mcp,langchain,openai,terminal-anthropic]" pytest==9.2.0 pytest-asyncio==1.4.1 ruff==0.17.3 build==1.6.1
+      - run: make lint
+      - run: python -m pytest -q extend_ai_toolkit/tests/test_security.py extend_ai_toolkit/tests/test_adapter_security.py extend_ai_toolkit/tests/test_contracts.py extend_ai_toolkit/tests/test_client_workflows.py
+      - run: python -m build
+      - name: Validate the built wheel and its runtime graph
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          python -m venv /tmp/release-wheel
+          /tmp/release-wheel/bin/python -m pip install dist/*.whl
+          /tmp/release-wheel/bin/python -I -c "import extend_ai_toolkit,os; assert 'v'+extend_ai_toolkit.__version__ == os.environ['RELEASE_TAG']"
+          /tmp/release-wheel/bin/python tools/check_advisories.py
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: toolkit-distributions
+          path: dist/*
+          if-no-files-found: error
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: toolkit-distributions
+          path: dist
+      - uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # release/v1

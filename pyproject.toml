@@ -8,10 +8,11 @@ dynamic = ["version"]
 keywords = ["extend", "api", "virtual cards", "payments", "ai", "agent", "mcp"]
 readme = "README.md"
 license = { text = "MIT" }
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
-    "pydantic>=1.10.2",
-    "paywithextend==2.0.0",
+    "pydantic>=2.12.5,<3",
+    "typing-extensions>=4.15,<5",
+    "paywithextend==3.0.0",
 ]
 
 [project.urls]
@@ -19,37 +20,13 @@ dependencies = [
 "Source Code" = "https://github.com/paywithextend/extend-ai-toolkit"
 
 [project.optional-dependencies]
-langchain = ["langchain==0.3.20"]
-mcp = [
-    "colorama>=0.4.4",
-    "mcp>=1.4.1",
-    "mypy==1.15.0",
-    "python-dotenv>=1.0.1",
-    "starlette>=0.40.0,<0.46.0",
-    "uvicorn>=0.27.0",
-]
-openai = [
-    "openai>=1.66.3,<2.0.0",
-    "openai-agents==0.0.4",
-]
-crewai = ["crewai>=0.108.0"]
-dev = [
-    "build",
-    "colorama>=0.4.4",
-    "crewai>=0.108.0",
-    "langchain==0.3.20",
-    "mcp>=1.4.1",
-    "mypy>=1.15.0",
-    "openai>=1.66.3,<2.0.0",
-    "openai-agents==0.0.4",
-    "pytest>=7.0.1",
-    "pytest-asyncio>=0.26.0",
-    "python-dotenv>=1.0.1",
-    "ruff>=0.6.1",
-    "starlette>=0.40.0,<0.46.0",
-    "tomli>=2.0.1; python_version < '3.11'",
-    "uvicorn>=0.27.0",
-]
+langchain = ["langchain-core>=1.7.3,<2"]
+mcp = ["mcp>=2.3.0,<3"]
+openai = ["openai-agents>=0.24.0,<0.25"]
+crewai = ["crewai>=1.15.33,<2"]
+terminal-openai = ["mcp>=2.3.0,<3", "openai>=3.42.0,<4"]
+terminal-anthropic = ["mcp>=2.3.0,<3", "anthropic>=2.3.0,<3"]
+dev = ["build>=1.6.1,<2", "pytest>=9.2,<10", "pytest-asyncio>=1.4,<2", "ruff>=0.17.3,<1"]
 
 [build-system]
 requires = ["hatchling"]
@@ -69,22 +46,15 @@ exclude = ["extend_ai_toolkit/tests/**"]
 allow-direct-references = true
 
 [tool.ruff]
-lint.select = [
-    "E", # pycodestyle
-    "F", # pyflakes
-    "I", # isort
-    "D", # pydocstyle
-    "T201",
-    "UP",
-]
-lint.ignore = [
-    "UP006",
-    "UP007",
-    "UP035",
-    "D417",
-    "E501",
-]
+target-version = "py311"
+line-length = 100
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "T201"]
 [tool.ruff.lint.per-file-ignores]
-"extend_ai_toolkit/tests/*" = ["D", "UP", "I002"]
-[tool.ruff.lint.pydocstyle]
-convention = "google"
+"tools/*" = ["T201"]
+"extend_ai_toolkit/examples/*" = ["T201"]
+"extend_ai_toolkit/notebooks/*" = ["T201"]
+"extend_ai_toolkit/modelcontextprotocol/client/mcp_client.py" = ["T201"]
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"

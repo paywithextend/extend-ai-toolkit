@@ -1,19 +1,10 @@
-VENV_NAME ?= venv
-PIP ?= pip
-PYTHON ?= python3.12
-ENV ?= stage
+PYTHON ?= python
+lint:
+	$(PYTHON) -m ruff check extend_ai_toolkit tools --exclude 'extend_ai_toolkit/tests/test_*'
+	$(PYTHON) -m ruff check extend_ai_toolkit/tests/test_security.py extend_ai_toolkit/tests/test_adapter_security.py
 
-venv: $(VENV_NAME)/bin/activate
+test:
+	$(PYTHON) -m pytest -q extend_ai_toolkit/tests/test_security.py extend_ai_toolkit/tests/test_adapter_security.py
 
-$(VENV_NAME)/bin/activate: pyproject.toml
-	@test -d $(VENV_NAME) || $(PYTHON) -m venv $(VENV_NAME)
-	$(VENV_NAME)/bin/python -m pip install -e ".[dev]"
-	@touch $(VENV_NAME)/bin/activate
-
-test: venv
-	$(VENV_NAME)/bin/pytest tests
-
-build: venv
-	cp LICENSE LICENSE.bak
-	$(VENV_NAME)/bin/python -m build
-	rm LICENSE.bak
+build:
+	$(PYTHON) -m build

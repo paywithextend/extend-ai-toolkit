@@ -4,26 +4,19 @@ import json
 import logging
 import sys
 from contextlib import asynccontextmanager
-from typing import Optional, List, Dict, Any
+from typing import Any, Dict, List, Optional
 
-from dotenv import load_dotenv
 from mcp import ClientSession
 from mcp.client.sse import sse_client
-from mypy.util import json_dumps
 
 from extend_ai_toolkit.modelcontextprotocol.client import (
-    AnthropicChatClient,
-    OpenAIChatClient,
-    ChatClient
+    ChatClient,
 )
 
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger("mcp_client")
-
-load_dotenv()
 
 
 class MCPClient:
@@ -61,14 +54,13 @@ class MCPClient:
             await self.session.initialize()
 
             # List available tools (for logging purposes)
-            response = await self.session.list_tools()
-            tool_names = [tool.name for tool in response.tools]
-            logger.info(f"Connected to server with tools: {tool_names}")
+            await self.session.list_tools()
+            logger.info("MCP client operation completed or failed; payload omitted")
 
             yield self
 
-        except Exception as e:
-            logger.error(f"Error connecting to SSE server: {str(e)}")
+        except Exception:
+            logger.error("MCP client operation completed or failed; payload omitted")
             raise
         finally:
             await self.cleanup()
@@ -96,11 +88,10 @@ class MCPClient:
             raise ConnectionError("Not connected to MCP server")
 
         response = await self.session.list_tools()
-        return [{
-            "name": tool.name,
-            "description": tool.description,
-            "input_schema": tool.inputSchema
-        } for tool in response.tools]
+        return [
+            {"name": tool.name, "description": tool.description, "input_schema": tool.inputSchema}
+            for tool in response.tools
+        ]
 
     async def process_query(self, query: str) -> str:
         """
@@ -122,11 +113,13 @@ class MCPClient:
         functions = []
         for tool in available_tools:
             # Convert your tool's input_schema to a valid JSON schema if needed
-            functions.append({
-                "name": tool["name"],
-                "description": tool["description"],
-                "parameters": tool["input_schema"]
-            })
+            functions.append(
+                {
+                    "name": tool["name"],
+                    "description": tool["description"],
+                    "parameters": tool["input_schema"],
+                }
+            )
 
         final_text = []
 
@@ -145,34 +138,30 @@ class MCPClient:
                 try:
                     # Convert the JSON string into a dictionary
                     tool_arguments = json.loads(tool_arguments_str) if tool_arguments_str else None
-                except json.JSONDecodeError as e:
-                    logger.error(f"Error parsing tool arguments: {str(e)}")
+                except json.JSONDecodeError:
+                    logger.error("MCP client operation completed or failed; payload omitted")
                     tool_arguments = None
 
-                logger.info(f"Routing function call to tool: {tool_name} with args: {json_dumps(tool_arguments)}")
+                logger.info("MCP client operation completed or failed; payload omitted")
 
                 # Call the corresponding tool on the MCP server
                 tool_result = await self.session.call_tool(tool_name, tool_arguments)
 
                 # Append the function call and tool result to the conversation history
-                messages.append({
-                    "role": "assistant",
-                    "content": None,
-                    "function_call": {
-                        "name": tool_name,
-                        "arguments": tool_arguments_str
+                messages.append(
+                    {
+                        "role": "assistant",
+                        "content": None,
+                        "function_call": {"name": tool_name, "arguments": tool_arguments_str},
                     }
-                })
-                messages.append({
-                    "role": "function",
-                    "name": tool_name,
-                    "content": tool_result.content
-                })
+                )
+                messages.append(
+                    {"role": "function", "name": tool_name, "content": tool_result.content}
+                )
 
                 # Make a follow-up API call including the tool result
                 assistant_message = await self.llm_client.generate_with_tool_result(
-                    messages=messages,
-                    max_tokens=self.max_tokens
+                    messages=messages, max_tokens=self.max_tokens
                 )
 
                 final_text.append(assistant_message)
@@ -184,7 +173,7 @@ class MCPClient:
 
         except Exception as e:
             error_msg = f"Error processing query: {str(e)}"
-            logger.error(error_msg)
+            logger.error("MCP request failed")
             return error_msg
 
     async def chat_loop(self):
@@ -202,7 +191,7 @@ class MCPClient:
 
                 query = input("\nQuery: ").strip()
 
-                if query.lower() in ('quit', 'exit', 'q'):
+                if query.lower() in ("quit", "exit", "q"):
                     break
 
                 print("Processing query...")
@@ -215,21 +204,39 @@ class MCPClient:
                 break
 
             except Exception as e:
-                logger.error(f"Error in chat loop: {str(e)}")
+                logger.error("MCP client operation completed or failed; payload omitted")
                 print(f"\nError: {str(e)}")
 
 
 async def main():
     """Main entry point for the MCP client"""
 
-    parser = argparse.ArgumentParser(description="MCP Client for interacting with SSE-based servers.")
-    parser.add_argument("--llm-provider", type=str, choices=["openai", "anthropic"], default="openai",
-                        help="LLM Provider (e.g., openai)")
-    parser.add_argument("--llm-model", type=str, help="LLM Model (e.g., gpt-4o, claude-3-5-sonnet-20240229)")
-    parser.add_argument("--mcp-server-host", type=str, required=True, help="Server hostname (e.g., localhost)")
-    parser.add_argument("--mcp-server-port", type=int, required=True, help="Server port (e.g., 8000)")
-    parser.add_argument("--scheme", type=str, choices=["http", "https"], default="http",
-                        help="URL scheme (default: http)")
+    parser = argparse.ArgumentParser(
+        description="MCP Client for interacting with SSE-based servers."
+    )
+    parser.add_argument(
+        "--llm-provider",
+        type=str,
+        choices=["openai", "anthropic"],
+        default="openai",
+        help="LLM Provider (e.g., openai)",
+    )
+    parser.add_argument(
+        "--llm-model", type=str, help="LLM Model (e.g., gpt-4o, claude-3-5-sonnet-20240229)"
+    )
+    parser.add_argument(
+        "--mcp-server-host", type=str, required=True, help="Server hostname (e.g., localhost)"
+    )
+    parser.add_argument(
+        "--mcp-server-port", type=int, required=True, help="Server port (e.g., 8000)"
+    )
+    parser.add_argument(
+        "--scheme",
+        type=str,
+        choices=["http", "https"],
+        default="http",
+        help="URL scheme (default: http)",
+    )
 
     args = parser.parse_args()
 
@@ -238,20 +245,20 @@ async def main():
 
     if args.llm_provider == "openai":
         model = args.llm_model or "gpt-4o"
+        from .openai_chat_client import OpenAIChatClient
         llm_client = OpenAIChatClient(model_name=model)
     else:
         model = args.llm_model or "claude-3-7-sonnet-20250219"
+        from .anthropic_chat_client import AnthropicChatClient
         llm_client = AnthropicChatClient(model_name=model)
 
     try:
-        async with MCPClient(
-                llm_client=llm_client
-        ).connect(server_url=server_url) as client:
+        async with MCPClient(llm_client=llm_client).connect(server_url=server_url) as client:
             await client.chat_loop()
     except KeyboardInterrupt:
         print("\nProgram terminated by user")
     except Exception as e:
-        logger.error(f"Unhandled exception: {str(e)}")
+        logger.error("MCP client operation completed or failed; payload omitted")
         print(f"\nError: {str(e)}")
         sys.exit(1)
 

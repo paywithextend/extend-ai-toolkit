@@ -1,114 +1,94 @@
-from typing import Optional, List
+"""Validated host capability configuration (not model-supplied authority)."""
 
-from pydantic.v1 import BaseModel
+from __future__ import annotations
 
-from .enums import Product, Action
-from .models import Scope, Actions
-from .tools import Tool
-from .utils import pop_first
+from typing import TYPE_CHECKING
+
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+from .enums import Product
+from .models import Scope
+
+if TYPE_CHECKING:
+    from .tools import Tool
 
 VALID_SCOPES = [
-    'virtual_cards.read',
-    'virtual_cards.update',
-    'credit_cards.read',
-    'transactions.read',
-    'transactions.update',
-    'expense_categories.read',
-    'expense_categories.create',
-    'expense_categories.update',
-    'receipt_attachments.read',
-    'receipt_attachments.create',
-    'organizations.read',
-    'users.read',
-    'expense_policies.read',
+    "virtual_cards.read",
+    "virtual_cards.update",
+    "credit_cards.read",
+    "transactions.read",
+    "transactions.update",
+    "expense_categories.read",
+    "expense_categories.create",
+    "expense_categories.update",
+    "receipt_attachments.read",
+    "receipt_attachments.create",
+    "receipt_attachments.send",
+    "organizations.read",
+    "users.read",
+    "expense_policies.read",
 ]
 
 
 class Configuration(BaseModel):
-    scope: Optional[List[Scope]] = None
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    scope: list[Scope] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def validate_scopes(self):
+        for scope in self.scope:
+            for action, enabled in scope.actions.items():
+                if type(enabled) is not bool or f"{scope.type.value}.{action}" not in VALID_SCOPES:
+                    raise ValueError("Invalid scope action")
+        return self
 
     def add_scope(self, scope):
-        if not self.scope:
-            self.scope = []
-        self.scope.append(scope)
+        self.scope = type(self)(scope=[*self.scope, scope]).scope
 
     def allowed_tools(self, tools) -> list[Tool]:
         return [tool for tool in tools if self.is_tool_in_scope(tool)]
 
     def is_tool_in_scope(self, tool: Tool) -> bool:
-        if not self.scope:
-            return False
-
-        for tool_scope in tool.required_scope:
-            configured_scope = next(
-                filter(lambda x: x.type == tool_scope.type, self.scope),
-                None
-            )
-            if configured_scope is None:
+        for required in tool.required_scope:
+            actions = {
+                action
+                for scope in self.scope
+                if scope.type == required.type
+                for action, enabled in scope.actions.items()
+                if enabled is True
+            }
+            if any(
+                enabled and action not in actions for action, enabled in required.actions.items()
+            ):
                 return False
-            for action, required in tool_scope.actions.items():
-                if required and not configured_scope.actions.get(action, False):
-                    return False
-        return True
+        return bool(tool.required_scope)
 
     @classmethod
-    def all_tools(cls) -> "Configuration":
-        scopes: List[Scope] = []
-        for tool in VALID_SCOPES:
-            product_str, action_str = tool.split(".")
-            scope: Scope = pop_first(
-                scopes,
-                lambda x: x.type.value == product_str,
-                default=None
-            )
-            if scope:
-                action = Action(action_str)
-                scope.actions[action.value] = True
-                scopes.append(scope)
-            else:
-                scope = Scope.from_str(product_str, action_str)
-                scopes.append(scope)
-
-        return cls(scope=scopes)
+    def all_tools(cls):
+        return cls.from_tool_str(",".join(VALID_SCOPES))
 
     @classmethod
-    def from_tool_str(cls, tools: str) -> "Configuration":
-        configuration = cls(scope=[])
-        tool_specs = tools.split(",") if tools else []
+    def read_only(cls):
+        return cls.from_tool_str(",".join(s for s in VALID_SCOPES if s.endswith(".read")))
 
-        if "all" in tools:
-            configuration = Configuration.all_tools()
-        else:
-            validated_tools = []
-            for tool_spec in tool_specs:
-                validated_tools.append(validate_tool_spec(tool_spec))
-
-            for product, action_str in validated_tools:
-                existing_scope = next(
-                    filter(lambda x: x.type == product, configuration.scope or []),
-                    None
-                )
-                if existing_scope:
-                    existing_scope.actions[action_str] = True
-                else:
-                    scope = Scope(product, Actions(**{action_str: True}))
-                    configuration.add_scope(scope)
-        return configuration
+    @classmethod
+    def from_tool_str(cls, tools: str):
+        if not isinstance(tools, str):
+            raise ValueError("Scopes must be a comma-separated string")
+        if tools == "":
+            return cls()
+        specs = [token.strip() for token in tools.split(",")]
+        if specs == ["all"]:
+            specs = VALID_SCOPES
+        scopes = {}
+        for spec in specs:
+            product, action = validate_tool_spec(spec)
+            scopes.setdefault(product, {})[action] = True
+        return cls(scope=[Scope(product, actions) for product, actions in scopes.items()])
 
 
 def validate_tool_spec(tool_spec: str) -> tuple[Product, str]:
-    try:
-        product_str, action = tool_spec.split(".")
-    except ValueError:
-        raise ValueError(f"Tool spec '{tool_spec}' must be in the format 'product.action'")
-
-    try:
-        product = Product(product_str)
-    except ValueError:
-        raise ValueError(f"Invalid product: '{product_str}'. Valid products are: {[p.value for p in Product]}")
-
-    valid_actions = Actions.__annotations__.keys()
-    if action not in valid_actions:
-        raise ValueError(f"Invalid action: '{action}'. Valid actions are: {list(valid_actions)}")
-
-    return product, action
+    if tool_spec not in VALID_SCOPES:
+        raise ValueError("Unknown or malformed capability; expected a supported product.action")
+    product, action = tool_spec.split(".")
+    return Product(product), action
