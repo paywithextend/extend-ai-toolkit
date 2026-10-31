@@ -83,15 +83,11 @@ async def execute_tool(
                 "content_type": snapshot.content_type,
             }
             await policy.authorize(tool.name, tool.side_effect_class, proposal)
-            data = (
-                {"transactionId": validated["transaction_id"]}
-                if validated.get("transaction_id")
-                else {}
-            )
-            return await extend.api_client.post_multipart(
-                "/receiptattachments",
-                data=data,
-                files={"file": (snapshot.filename, snapshot.file, snapshot.content_type)},
+            return await extend.receipt_attachments.create_receipt_attachment(
+                snapshot.file,
+                transaction_id=validated.get("transaction_id"),
+                filename=snapshot.filename,
+                content_type=snapshot.content_type,
             )
         finally:
             snapshot.close()

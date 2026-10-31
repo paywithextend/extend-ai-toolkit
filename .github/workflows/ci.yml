@@ -26,7 +26,7 @@ jobs:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           repository: paywithextend/extend-python
-          ref: 18eff6554c31841fc00f9c3a4395a76741662e90
+          ref: e24991de054ea78152275f32e72838758fdd38f1
           path: .sdk-source
       - run: |
           python -m pip install build==1.6.1
@@ -57,7 +57,7 @@ jobs:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           repository: paywithextend/extend-python
-          ref: 18eff6554c31841fc00f9c3a4395a76741662e90
+          ref: e24991de054ea78152275f32e72838758fdd38f1
           path: .sdk-source
       - run: |
           python -m pip install ./.sdk-source

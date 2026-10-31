@@ -11,7 +11,7 @@
 
 ## Release order
 
-SDK PR 29 must merge and publish `paywithextend==3.0.0` before this package can install from PyPI. Review CI temporarily builds the exact SDK commit `18eff6554c31841fc00f9c3a4395a76741662e90`; runtime metadata never points to Git or a local fork. This toolkit PR remains draft until the SDK release is available.
+SDK PR 29 must merge and publish `paywithextend==3.0.0` before this package can install from PyPI. Review CI temporarily builds the exact SDK commit `e24991de054ea78152275f32e72838758fdd38f1`; runtime metadata never points to Git or a local fork. This toolkit PR remains draft until the SDK release is available.
 
 Do not publish toolkit 2.0 until the stacked API-contract/client work and sandbox smoke validation are complete. Release CI requires those contract/client test files. Publication is manual from a reviewed development tag and a previously tested wheel, through the protected `pypi` environment and Trusted Publishing. The repository owner must register the PyPI Trusted Publisher and environment protections before use; YAML alone does not perform that setup. No package has been published by this change.
 

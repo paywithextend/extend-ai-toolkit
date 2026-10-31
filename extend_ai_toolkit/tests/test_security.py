@@ -27,7 +27,7 @@ def client():
             update_transaction_expense_data=AsyncMock(return_value={}),
             send_receipt_reminder=AsyncMock(return_value={}),
         ),
-        api_client=SimpleNamespace(post_multipart=AsyncMock(return_value={"id": "receipt"})),
+        receipt_attachments=SimpleNamespace(create_receipt_attachment=AsyncMock(return_value={"id": "receipt"})),
         aclose=AsyncMock(),
     )
 
@@ -71,7 +71,7 @@ def test_catalog_effects_and_send_permission():
 async def test_default_policy_denies_every_write(client, name):
     with pytest.raises(ToolPermissionError):
         await execute_tool(client, name, {})
-    client.api_client.post_multipart.assert_not_called()
+    client.receipt_attachments.create_receipt_attachment.assert_not_called()
 
 
 async def test_forged_catalog_cannot_downgrade_effect(client):
@@ -218,13 +218,14 @@ async def test_upload_approval_covers_snapshot_not_replaced_file(client, tmp_pat
         source.write_bytes(b"%PDF-1.7 changed after snapshot")
         return True
 
-    async def upload(path, data, files):
-        assert path == "/receiptattachments"
-        assert data == {"transactionId": "t"}
-        assert files["file"][1].read() == original
+    async def upload(file, *, transaction_id, filename, content_type):
+        assert transaction_id == "t"
+        assert filename == "safe.pdf"
+        assert content_type == "application/pdf"
+        assert file.read() == original
         return {"id": "r"}
 
-    client.api_client.post_multipart.side_effect = upload
+    client.receipt_attachments.create_receipt_attachment.side_effect = upload
     result = await execute_tool(
         client,
         "create_receipt_attachment",
