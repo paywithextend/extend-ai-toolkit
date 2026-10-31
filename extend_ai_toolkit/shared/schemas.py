@@ -1,4 +1,4 @@
-from typing import Dict, Optional, List
+from typing import Dict, List, Optional, Union
 
 from pydantic import BaseModel, Field
 
@@ -77,9 +77,21 @@ class GetTransactions(BaseModel):
         None,
         description="End date to filter transactions (YYYY-MM-DD)."
     )
-    status: Optional[str] = Field(
+    status: Optional[Union[List[str], str]] = Field(
         None,
         description="Filter transactions by status (e.g., PENDING, CLEARED, DECLINED, etc.)."
+    )
+    receipt_statuses: Optional[List[str]] = Field(
+        None,
+        description="Filter transactions by receipt statuses."
+    )
+    expense_category_statuses: Optional[List[str]] = Field(
+        None,
+        description="Filter transactions by expense category status, such as Attached or Missing."
+    )
+    missing_expense_categories: Optional[bool] = Field(
+        None,
+        description="Filter transactions missing expense categorizations."
     )
     virtual_card_id: Optional[str] = Field(
         None,
@@ -105,6 +117,42 @@ class GetTransactions(BaseModel):
         None,
         description="Field to sort by, with optional direction. Use 'recipientName', 'merchantName', 'amount', 'date' for ASC. Use '-recipientName', '-merchantName', '-amount', '-date' for DESC."
     )    
+
+
+class CountTransactions(BaseModel):
+    """Schema for the `count_transactions` operation."""
+    from_date: Optional[str] = Field(
+        None,
+        description="Start date to filter transactions (YYYY-MM-DD)."
+    )
+    to_date: Optional[str] = Field(
+        None,
+        description="End date to filter transactions (YYYY-MM-DD)."
+    )
+    status: Optional[List[str]] = Field(
+        None,
+        description="Filter transactions by one or more statuses."
+    )
+    virtual_card_id: Optional[str] = Field(
+        None,
+        description="Filter transactions by a specific virtual card ID."
+    )
+    min_amount_cents: Optional[int] = Field(
+        None,
+        description="Minimum transaction amount in cents."
+    )
+    max_amount_cents: Optional[int] = Field(
+        None,
+        description="Maximum transaction amount in cents."
+    )
+    search_term: Optional[str] = Field(
+        None,
+        description="Filter transactions by search term."
+    )
+    expense_category_statuses: Optional[List[str]] = Field(
+        None,
+        description="Filter transactions by expense category status, such as Attached or Missing."
+    )
 
 
 class GetTransactionDetail(BaseModel):
@@ -195,6 +243,10 @@ class GetCreditCards(BaseModel):
         None,
         description="Filter credit cards by status."
     )
+    type: Optional[str] = Field(
+        None,
+        description="Filter credit cards by type, such as SOURCE or DELEGATE."
+    )
     search_term: Optional[str] = Field(
         None,
         description="Search term to filter credit cards."
@@ -274,6 +326,18 @@ class GetExpenseCategoryLabels(BaseModel):
     sort_direction: Optional[str] = Field(
         None,
         description="Direction to sort the labels (ASC or DESC)."
+    )
+
+
+class GetExpenseCategoryLabel(BaseModel):
+    """Schema for the `get_expense_category_label` operation."""
+    category_id: str = Field(
+        ...,
+        description="The ID of the expense category."
+    )
+    label_id: str = Field(
+        ...,
+        description="The ID of the expense category label."
     )
 
 
@@ -362,6 +426,62 @@ class UpdateExpenseCategoryLabel(BaseModel):
     active: Optional[bool] = Field(
         None,
         description="The updated active status of the label."
+    )
+
+
+class GetOrganizations(BaseModel):
+    """Schema for the `get_organizations` operation."""
+
+
+class GetOrganizationMembers(BaseModel):
+    """Schema for the `get_organization_members` operation."""
+    organization_id: str = Field(
+        ...,
+        description="The organization ID to retrieve members for."
+    )
+    page: Optional[int] = Field(
+        None,
+        description="Page number for pagination."
+    )
+    count: Optional[int] = Field(
+        None,
+        description="Number of members per page."
+    )
+    search: Optional[str] = Field(
+        None,
+        description="Search term to filter members by name or email."
+    )
+    organization_role: Optional[str] = Field(
+        None,
+        description="Filter to a single organization role."
+    )
+    organization_roles: Optional[List[str]] = Field(
+        None,
+        description="Filter to multiple organization roles."
+    )
+    show_deactivated_users: Optional[bool] = Field(
+        True,
+        description="Whether to include deactivated users."
+    )
+    render_metrics: Optional[bool] = Field(
+        False,
+        description="Whether to include activity metrics."
+    )
+
+
+class GetUserDetails(BaseModel):
+    """Schema for the `get_user_details` operation."""
+    user_id: str = Field(
+        ...,
+        description="The user ID to retrieve."
+    )
+
+
+class GetExpensePolicy(BaseModel):
+    """Schema for the `get_expense_policy` operation."""
+    organization_id: str = Field(
+        ...,
+        description="The organization ID whose expense policy should be retrieved."
     )
 
 

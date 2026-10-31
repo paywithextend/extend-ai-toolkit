@@ -20,15 +20,25 @@ want to use the package run:
 pip install extend_ai_toolkit
 ```
 
+The base package installs the framework-neutral core only. Install the adapter
+extra for the framework or server runtime you want to use:
+
+```sh
+pip install "extend_ai_toolkit[langchain]"
+pip install "extend_ai_toolkit[mcp]"
+pip install "extend_ai_toolkit[openai]"
+pip install "extend_ai_toolkit[crewai]"
+```
+
 ### Requirements
 
 - **Python**: Version 3.10 or higher
 - **Extend API Key**: Sign up at [paywithextend.com](https://paywithextend.com) to obtain an API key
 - **Framework-specific Requirements**:
-  - LangChain: `langchain` and `langchain-openai` packages
-  - OpenAI: `openai` package
-  - CrewAI: `crewai` package
-  - Anthropic: `anthropic` package (for Claude)
+  - LangChain: install `extend_ai_toolkit[langchain]`
+  - OpenAI Agents: install `extend_ai_toolkit[openai]`
+  - CrewAI: install `extend_ai_toolkit[crewai]`
+  - MCP: install `extend_ai_toolkit[mcp]`
 
 ## Configuration
 
@@ -88,6 +98,47 @@ The toolkit provides a comprehensive set of tools organized by functionality:
 - `automatch_receipts`: Initiate async job to automatch uploaded receipts to transactions
 - `get_automatch_status`: Get the status of an automatch job
 - `send_receipt_reminder`: Send a reminder (via email) for a transaction missing a receipt 
+
+## Core Tool Catalog And Raw Execution
+
+The core package can be used by custom agent runtimes, workflow engines, and
+service backends that want Extend tool metadata and raw structured API results
+without taking a dependency on a specific AI framework.
+
+```python
+import asyncio
+import os
+
+from extend_ai_toolkit import execute_tool, list_tool_specs
+from extend_ai_toolkit.shared import Configuration
+from extend_ai_toolkit.shared.auth import create_extend_client
+
+
+async def main():
+    configuration = Configuration.from_tool_str("transactions.read")
+    specs = list_tool_specs(configuration)
+
+    extend = create_extend_client(
+        api_key=os.environ["EXTEND_API_KEY"],
+        api_secret=os.environ["EXTEND_API_SECRET"],
+    )
+    result = await execute_tool(
+        extend,
+        "get_transactions",
+        {"page": 0, "per_page": 10, "status": "CLEARED"},
+    )
+
+    print([spec.name for spec in specs])
+    print(result)
+
+
+asyncio.run(main())
+```
+
+`list_tool_specs` returns stable names, refs, input schemas, required scopes,
+action metadata, and read/write classification. `execute_tool` validates the
+input against the tool schema and returns raw structured data from the Extend
+API.
 
 ## Usage Examples
 

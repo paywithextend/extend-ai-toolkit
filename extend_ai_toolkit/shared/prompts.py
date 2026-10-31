@@ -43,6 +43,7 @@ It takes the following arguments:
 - page (int): The page number for the paginated list.
 - per_page (int): The number of credit cards per page.
 - status (Optional[str]): Filter credit cards by status.
+- type (Optional[str]): Filter credit cards by type, such as SOURCE or DELEGATE.
 - search_term (Optional[str]): A search term to filter credit cards.
 - sort_direction (Optional[str]): Sort direction (ASC or DESC).
 
@@ -64,7 +65,10 @@ It takes the following arguments:
 - per_page (int): The number of transactions per page.
 - from_date (Optional[str]): Filter transactions starting from this date (YYYY-MM-DD).
 - to_date (Optional[str]): Filter transactions up to this date (YYYY-MM-DD).
-- status (Optional[str]): Filter transactions by status (e.g., PENDING, CLEARED, DECLINED, etc.).
+- status (Optional[List[str]]): Filter transactions by statuses (e.g., PENDING, CLEARED, DECLINED, etc.).
+- receipt_statuses (Optional[List[str]]): Filter transactions by receipt statuses.
+- expense_category_statuses (Optional[List[str]]): Filter by expense category status, such as Attached or Missing.
+- missing_expense_categories (Optional[bool]): Filter transactions missing expense categorizations.
 - virtual_card_id (Optional[str]): Filter by a specific virtual card ID.
 - min_amount_cents (Optional[int]): Minimum transaction amount in cents.
 - max_amount_cents (Optional[int]): Maximum transaction amount in cents.
@@ -89,6 +93,14 @@ The response is a JSON object with a "reports" key containing:
 - "pageItemCount": Number of items per page
 - "totalItems": Total number of transactions matching the query
 - "numberOfPages": Total number of pages available
+"""
+
+count_transactions_prompt = """
+This tool counts transactions in Extend using the same filters as transaction search.
+It takes optional date, status, virtual card, amount, search, and expense category
+status filters.
+
+The response includes the count metadata returned by the transaction report API.
 """
 
 get_transaction_detail_prompt = """
@@ -193,6 +205,15 @@ IMPORTANT USAGE GUIDELINES:
 The response includes the fetched expense category labels and pagination metadata.
 """
 
+get_expense_category_label_prompt = """
+This tool retrieves detailed information for a specific expense category label in Extend.
+It takes the following arguments:
+- category_id (str): The ID of the parent expense category.
+- label_id (str): The ID of the expense category label.
+
+The response includes the expense category label details.
+"""
+
 create_expense_category_prompt = """
 This tool creates a new expense category in Extend.
 It takes the following arguments:
@@ -239,6 +260,40 @@ Optional arguments include:
 - active (Optional[bool]): The updated active status of the label.
 
 The response includes the updated expense category label details.
+"""
+
+get_organizations_prompt = """
+This tool retrieves the organizations available to the authenticated user.
+It takes no arguments.
+
+The response includes organization IDs, names, settings, and related metadata.
+"""
+
+get_organization_members_prompt = """
+This tool retrieves members for a specific organization.
+It takes the following arguments:
+- organization_id (str): The organization ID.
+- page, count, search, organization_role, organization_roles: Optional filters.
+- show_deactivated_users (Optional[bool]): Whether to include deactivated users.
+- render_metrics (Optional[bool]): Whether to include activity metrics.
+
+The response includes users and pagination metadata.
+"""
+
+get_user_details_prompt = """
+This tool retrieves detailed information for a specific user.
+It takes the following argument:
+- user_id (str): The user ID.
+
+The response includes profile, preference, organization, and status fields.
+"""
+
+get_expense_policy_prompt = """
+This tool retrieves the raw expense policy text for an organization.
+It takes the following argument:
+- organization_id (str): The organization ID.
+
+The response includes the policy identifier, organization ID, and raw text when available.
 """
 
 create_receipt_attachment_prompt = """
