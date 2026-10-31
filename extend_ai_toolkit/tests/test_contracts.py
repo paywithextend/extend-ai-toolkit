@@ -107,6 +107,8 @@ async def test_list_count_filter_equivalence_and_repeated_statuses():
         "statuses": ["pending", "cleared"],
         "from_date": "2026-01-01",
         "to_date": "2026-02-01",
+        "date_type": "Clear",
+        "credit_card_id": "cc_1",
         "receipt_statuses": ["missing"],
         "expense_category_statuses": ["attached"],
         "virtual_card_id": "vc_1",
@@ -125,6 +127,9 @@ async def test_list_count_filter_equivalence_and_repeated_statuses():
     ]
     assert first == requests[1].url.params.multi_items()
     assert requests[0].url.params.get_list("status") == ["PENDING", "CLEARED"]
+    assert requests[0].url.params["sinceClearedAt"] == "2026-01-01"
+    assert "since" not in requests[0].url.params
+    assert requests[0].url.params["creditCardId"] == "cc_1"
     assert requests[0].url.params["receiptStatus"] == "Missing"
     assert requests[0].url.params["expenseCategoryStatuses"] == "Attached"
 
@@ -157,7 +162,7 @@ def test_false_missing_filters_are_not_dropped():
 
 async def test_full_page_is_provisional_and_advances_once():
     api = SimpleNamespace(
-        get=AsyncMock(
+        get_transactions=AsyncMock(
             return_value={
                 "report": {
                     "page": 1,
@@ -175,7 +180,7 @@ async def test_full_page_is_provisional_and_advances_once():
         )
     )
     result = await execute_tool(
-        SimpleNamespace(api_client=api), "get_transactions", {"per_page": 1}
+        SimpleNamespace(transactions=api), "get_transactions", {"per_page": 1}
     )
     assert result["paginationInfo"] == {
         "page": 1,
@@ -277,3 +282,60 @@ def test_generated_docs_match_catalog():
         str(Path(__file__).resolve().parents[2] / "tools/generate_capabilities.py")
     )["render"]
     assert Path(__file__).resolve().parents[2].joinpath("CAPABILITIES.md").read_text() == generate()
+
+
+async def test_explicit_label_clear_is_approved_and_sent_unchanged():
+    approved = []
+    sent = []
+
+    async def approve(request):
+        approved.append(json.loads(request.arguments_json))
+        return True
+
+    def respond(request):
+        sent.append(json.loads(request.content))
+        return httpx.Response(200, json={"id": "t_1", "expenseDetails": []})
+
+    arguments = {
+        "transaction_id": "t_1",
+        "data": {"expenseDetails": [{"categoryId": "ec_1", "labelId": None}]},
+    }
+    policy = ExecutionPolicy.from_configuration(
+        Configuration.all_tools(), actor_id="u", approve=approve
+    )
+    async with httpx.AsyncClient(transport=httpx.MockTransport(respond)) as transport:
+        async with ExtendClient(
+            BasicAuth("synthetic", "secret"), environment="stage", http_client=transport
+        ) as client:
+            await execute_tool(client, "update_transaction_expense_data", arguments, policy=policy)
+    assert approved == [arguments]
+    assert sent == [arguments["data"]]
+
+
+async def test_label_clear_requires_explicit_label_value():
+    with pytest.raises(ValidationError):
+        await execute_tool(
+            object(),
+            "update_transaction_expense_data",
+            {"transaction_id": "t", "data": {"expenseDetails": [{"categoryId": "ec"}]}},
+            policy=host_policy(),
+        )
+
+
+@pytest.mark.parametrize("name,arguments,wire", [
+    ("get_expense_categories", {"transaction_id":"t_1", "required_for_transactions":False}, {"transactionId":"t_1", "requiredForTransactions":"false"}),
+    ("create_expense_category", {"name":"Synthetic", "code":"SYN", "required":False, "required_for_transactions":True}, {"name":"Synthetic", "code":"SYN", "required":False, "requiredForTransactions":True}),
+    ("update_expense_category", {"category_id":"ec_1", "required_for_virtual_cards":False}, {"requiredForVirtualCards":False}),
+])
+async def test_custom_field_consumer_contracts(name, arguments, wire):
+    seen = []
+
+    def respond(request):
+        seen.append(request)
+        assert (dict(request.url.params) if request.method == "GET" else json.loads(request.content)) == wire
+        return httpx.Response(200, json={})
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(respond)) as transport:
+        async with ExtendClient(BasicAuth("synthetic", "secret"), environment="stage", http_client=transport) as client:
+            await execute_tool(client, name, arguments, policy=host_policy())
+    assert len(seen) == 1

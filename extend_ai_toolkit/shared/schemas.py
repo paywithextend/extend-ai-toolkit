@@ -30,7 +30,7 @@ class GetVirtualCards(ToolArguments):
     per_page: int = Field(10, description="Number of items per page, default is 10.")
     status: Optional[str] = Field(
         None,
-        description="Filter virtual cards by status. Options: ACTIVE, CANCELLED, PENDING, EXPIRED, CLOSED, CONSUMED.",
+        description="Filter virtual cards by status. Options: ACTIVE, CANCELLED, PENDING, EXPIRED, CLOSED, CONSUMED, REJECTED.",
     )
     recipient: Optional[str] = Field(
         None, description="Filter virtual cards by recipient identifier."
@@ -70,6 +70,10 @@ class TransactionFilters(ToolArguments):
     expense_category_statuses: Optional[List[str]] = None
     missing_expense_categories: Optional[bool] = None
     virtual_card_id: Optional[str] = None
+    credit_card_id: Optional[str] = None
+    date_type: str = Field(
+        "Transaction", description="Transaction or Clear; dates filter that event."
+    )
     min_amount_cents: Optional[int] = None
     max_amount_cents: Optional[int] = None
     receipt_missing: Optional[bool] = None
@@ -105,7 +109,7 @@ class GetTransactionDetail(ToolArguments):
 
 class ExpenseDetail(ToolArguments):
     categoryId: str = Field(pattern=r"^[A-Za-z0-9_-]{1,200}$")
-    labelId: Optional[str] = Field(None, pattern=r"^[A-Za-z0-9_-]{1,200}$")
+    labelId: Optional[str] = Field(..., pattern=r"^[A-Za-z0-9_-]{1,200}$")
 
 
 class ExpenseDataUpdate(ToolArguments):
@@ -120,7 +124,7 @@ class UpdateTransactionExpenseData(ToolArguments):
         ...,
         description=(
             "A dictionary representing the expense details to update. "
-            "Expected format: {'expenseDetails': [{'categoryId': str, 'labelId': str}]}."
+            "Expected format: {'expenseDetails': [{'categoryId': str, 'labelId': str | None}]}."
         ),
     )
 
@@ -156,6 +160,12 @@ class GetExpenseCategories(ToolArguments):
     sort_direction: Optional[str] = Field(
         None, description="Direction to sort the categories (ASC or DESC)."
     )
+
+    transaction_id: Optional[str] = Field(
+        None, description="Only fields applicable to this transaction."
+    )
+    required_for_transactions: Optional[bool] = None
+    required_for_virtual_cards: Optional[bool] = None
 
 
 class GetExpenseCategory(ToolArguments):
@@ -196,6 +206,9 @@ class CreateExpenseCategory(ToolArguments):
         None, description="Indicates if free text is allowed."
     )
 
+    required_for_transactions: Optional[bool] = None
+    required_for_virtual_cards: Optional[bool] = None
+
 
 class CreateExpenseCategoryLabel(ToolArguments):
     """Schema for the `create_expense_category_label` operation."""
@@ -216,6 +229,9 @@ class UpdateExpenseCategory(ToolArguments):
     free_text_allowed: Optional[bool] = Field(
         None, description="Indicates if free text is allowed."
     )
+
+    required_for_transactions: Optional[bool] = None
+    required_for_virtual_cards: Optional[bool] = None
 
 
 class UpdateExpenseCategoryLabel(ToolArguments):

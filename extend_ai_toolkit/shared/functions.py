@@ -1,25 +1,6 @@
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 from extend import ExtendClient
-
-from .filters import transaction_query
-
-
-def _clean_params(params: Dict[str, Any]) -> Dict[str, Any]:
-    return {key: value for key, value in params.items() if value is not None}
-
-
-def _api_client_for(extend: ExtendClient) -> Any:
-    api_client = getattr(extend, "api_client", None)
-    if api_client is None:
-        raise AttributeError("Extend client does not expose a raw API client")
-    return api_client
-
-
-async def _raw_get(
-    extend: ExtendClient, path: str, params: Optional[Dict[str, Any]] = None
-) -> Dict:
-    return await _api_client_for(extend).get(path, _clean_params(params or {}))
 
 
 async def get_virtual_cards(
@@ -77,10 +58,7 @@ async def get_transactions(
     extend: ExtendClient, page: int = 1, per_page: int = 50, **filters
 ) -> Dict:
     """Get one report page. Full-page totals are sentinel values, not exact counts."""
-    response = await extend.api_client.get(
-        "/reports/transactions/v2",
-        {**transaction_query(**filters), "page": page, "perPage": per_page},
-    )
+    response = await extend.transactions.get_transactions(page=page, per_page=per_page, **filters)
     report = response.get("report", {})
     rows = report.get("transactions", [])
     actual_page = report.get("page", page)
@@ -100,7 +78,7 @@ async def get_transactions(
 
 async def count_transactions(extend: ExtendClient, **filters) -> Dict:
     """Request an exact count explicitly, using the same filters as report listing."""
-    return await extend.api_client.get("/reports/transactions/count", transaction_query(**filters))
+    return await extend.transactions.count_transactions(**filters)
 
 
 async def get_transaction_detail(extend: ExtendClient, transaction_id: str) -> Dict:
@@ -119,20 +97,13 @@ async def get_credit_cards(
     sort_direction: str | None = None,
 ) -> Dict:
     """List credit cards with the backend's singular type parameter."""
-    if type is not None and type.upper() not in {"SOURCE", "DELEGATE"}:
-        raise ValueError("Credit-card type must be SOURCE or DELEGATE")
-    return await extend.api_client.get(
-        "/creditcards",
-        _clean_params(
-            {
-                "page": page,
-                "count": per_page,
-                "status": status.upper() if status else None,
-                "type": type.upper() if type else None,
-                "search": search_term,
-                "sortDirection": sort_direction,
-            }
-        ),
+    return await extend.credit_cards.get_credit_cards(
+        page=page,
+        per_page=per_page,
+        status=status,
+        type=type,
+        search_term=search_term,
+        sort_direction=sort_direction,
     )
 
 
@@ -147,6 +118,9 @@ async def get_expense_categories(
     search: Optional[str] = None,
     sort_field: Optional[str] = None,
     sort_direction: Optional[str] = None,
+    transaction_id: Optional[str] = None,
+    required_for_transactions: Optional[bool] = None,
+    required_for_virtual_cards: Optional[bool] = None,
 ) -> Dict:
     """
     Get a list of expense categories.
@@ -157,6 +131,9 @@ async def get_expense_categories(
         search=search,
         sort_field=sort_field,
         sort_direction=sort_direction,
+        transaction_id=transaction_id,
+        required_for_transactions=required_for_transactions,
+        required_for_virtual_cards=required_for_virtual_cards,
     )
     return response
 
@@ -195,7 +172,7 @@ async def get_expense_category_labels(
 
 
 async def get_expense_category_label(extend: ExtendClient, category_id: str, label_id: str) -> Dict:
-    return await _raw_get(extend, f"/expensedata/categories/{category_id}/labels/{label_id}")
+    return await extend.expense_data.get_expense_category_label(category_id, label_id)
 
 
 async def create_expense_category(
@@ -205,12 +182,20 @@ async def create_expense_category(
     required: bool,
     active: Optional[bool] = None,
     free_text_allowed: Optional[bool] = None,
+    required_for_transactions: Optional[bool] = None,
+    required_for_virtual_cards: Optional[bool] = None,
 ) -> Dict:
     """
     Create an expense category.
     """
     response = await extend.expense_data.create_expense_category(
-        name=name, code=code, required=required, active=active, free_text_allowed=free_text_allowed
+        name=name,
+        code=code,
+        required=required,
+        active=active,
+        free_text_allowed=free_text_allowed,
+        required_for_transactions=required_for_transactions,
+        required_for_virtual_cards=required_for_virtual_cards,
     )
     return response
 
@@ -234,6 +219,8 @@ async def update_expense_category(
     active: Optional[bool] = None,
     required: Optional[bool] = None,
     free_text_allowed: Optional[bool] = None,
+    required_for_transactions: Optional[bool] = None,
+    required_for_virtual_cards: Optional[bool] = None,
 ) -> Dict:
     """
     Update an expense category.
@@ -244,6 +231,8 @@ async def update_expense_category(
         active=active,
         required=required,
         free_text_allowed=free_text_allowed,
+        required_for_transactions=required_for_transactions,
+        required_for_virtual_cards=required_for_virtual_cards,
     )
     return response
 
@@ -272,7 +261,7 @@ async def update_transaction_expense_data(
 
 
 async def get_organizations(extend: ExtendClient) -> Dict:
-    return await _raw_get(extend, "/organizations")
+    return await extend.organizations.get_organizations()
 
 
 async def get_organization_members(
@@ -286,30 +275,25 @@ async def get_organization_members(
     show_deactivated_users: bool = True,
     render_metrics: bool = False,
 ) -> Dict:
-    if organization_role is not None and organization_roles is not None:
-        raise ValueError("Choose either organization_role or organization_roles")
-    return await _raw_get(
-        extend,
-        f"/organizations/{organization_id}/members",
-        {
-            "page": page,
-            "count": count,
-            "search": search,
-            "organizationRole": organization_role,
-            "organizationRoles": organization_roles,
-            "showDeactivatedUsers": show_deactivated_users,
-            "renderMetrics": render_metrics,
-        },
+    return await extend.organizations.get_organization_members(
+        organization_id,
+        page=page,
+        count=count,
+        search=search,
+        organization_role=organization_role,
+        organization_roles=organization_roles,
+        show_deactivated_users=show_deactivated_users,
+        render_metrics=render_metrics,
     )
 
 
 async def get_user_details(extend: ExtendClient, user_id: str) -> Dict:
-    return await _raw_get(extend, f"/users/{user_id}")
+    return await extend.users.get_user_details(user_id)
 
 
 async def get_expense_policy(extend: ExtendClient, organization_id: str) -> Dict:
     """Return policy file/compile metadata; signed URLs are not fetched."""
-    return await _raw_get(extend, f"/organizations/{organization_id}/expensepolicy")
+    return await extend.organizations.get_expense_policy(organization_id)
 
 
 async def create_receipt_attachment(
