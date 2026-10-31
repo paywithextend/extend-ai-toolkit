@@ -39,8 +39,28 @@ async def test_real_adapter_registration_and_invocation(dependency, module, clas
         if dependency == "agents":
             await close.on_invoke_tool(None, json.dumps({"virtual_card_id": "v"}))
         else:
-            await close._arun(virtual_card_id="v")
+            if dependency == "crewai":
+                await close.to_structured_tool().ainvoke({"virtual_card_id": "v"})
+            else:
+                await close.ainvoke({"virtual_card_id": "v"})
     client.virtual_cards.close_virtual_card.assert_not_called()
+    approved_api = ExtendAPI(
+        client,
+        policy=ExecutionPolicy.from_configuration(
+            Configuration.all_tools(), actor_id="fixture-user", approve=AsyncMock(return_value=True)
+        ),
+    )
+    approved = next(t for t in cls(approved_api).get_tools() if t.name == "close_virtual_card")
+    if dependency == "agents":
+        result = await approved.on_invoke_tool(None, json.dumps({"virtual_card_id": "v"}))
+    elif dependency == "crewai":
+        result = await approved.to_structured_tool().ainvoke({"virtual_card_id": "v"})
+        with pytest.raises(NotImplementedError):
+            approved.to_structured_tool().invoke({"virtual_card_id": "v"})
+    else:
+        result = await approved.ainvoke({"virtual_card_id": "v"})
+    assert json.loads(result) == {}
+    client.virtual_cards.close_virtual_card.assert_awaited_once_with("v")
     await toolkit.aclose()
 
 
@@ -91,7 +111,10 @@ async def test_stdio_initialization_and_list():
             result = await session.call_tool("close_virtual_card", {"virtual_card_id": "v"})
             assert result.is_error
 
-@pytest.mark.parametrize("provider,module", [("openai", "openai_chat_client"), ("anthropic", "anthropic_chat_client")])
+
+@pytest.mark.parametrize(
+    "provider,module", [("openai", "openai_chat_client"), ("anthropic", "anthropic_chat_client")]
+)
 def test_terminal_provider_imports_without_the_other_provider(provider, module):
     if importlib.util.find_spec(provider) is None or importlib.util.find_spec("mcp") is None:
         pytest.skip("Selected terminal extra is not installed")

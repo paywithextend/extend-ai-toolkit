@@ -1,9 +1,17 @@
 from typing import Any
 
 from crewai.tools import BaseTool
+from crewai.tools.structured_tool import CrewStructuredTool
 from pydantic import ConfigDict, Field
 
 from extend_ai_toolkit.shared import ExtendAPI, Tool
+
+
+class AsyncExtendStructuredTool(CrewStructuredTool):
+    """Never create a new event loop around the pooled Extend client."""
+
+    def invoke(self, *args, **kwargs):
+        raise NotImplementedError("Use ainvoke for Extend tools")
 
 
 class ExtendCrewAITool(BaseTool):
@@ -30,3 +38,19 @@ class ExtendCrewAITool(BaseTool):
     def _run(self, **kwargs: Any) -> str:
         """Require the asynchronous API so the pooled SDK keeps one event loop."""
         raise NotImplementedError("Use CrewAI asynchronous tool execution")
+
+    def to_structured_tool(self):
+        tool = AsyncExtendStructuredTool(
+            name=self.name,
+            description=self.description,
+            args_schema=self.args_schema,
+            func=self._arun,
+            result_schema=self.result_schema,
+            result_as_answer=self.result_as_answer,
+            max_usage_count=self.max_usage_count,
+            current_usage_count=self.current_usage_count,
+            cache_function=self.cache_function,
+            tool_failure_policy=self.tool_failure_policy,
+        )
+        tool._original_tool = self
+        return tool
