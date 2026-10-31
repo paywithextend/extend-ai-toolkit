@@ -1,53 +1,48 @@
+"""Asynchronous openai adapter read example; --fixture makes no network requests."""
+
+import argparse
+import asyncio
+import json
 import os
 
-from agents import Agent, RunConfig, Runner
+import httpx
+from extend import ExtendClient
+from extend.auth import BasicAuth
 
-from extend_ai_toolkit.openai.toolkit import ExtendOpenAIToolkit
-from extend_ai_toolkit.shared import Actions, Configuration, Product, Scope
-
-# Load environment variables
-
-
-api_key = os.environ.get("EXTEND_API_KEY")
-api_secret = os.environ.get("EXTEND_API_SECRET")
+from extend_ai_toolkit.openai import ExtendOpenAIToolkit
+from extend_ai_toolkit.shared import ExtendAPI
 
 
 async def main():
-    extend_openai_toolkit = ExtendOpenAIToolkit.default_instance(
-        api_key,
-        api_secret,
-        Configuration(
-            scope=[
-                Scope(Product.VIRTUAL_CARDS, actions=Actions(read=True)),
-                Scope(Product.CREDIT_CARDS, actions=Actions(read=True)),
-                Scope(Product.TRANSACTIONS, actions=Actions(read=True)),
-            ]
-        ),
-    )
-
-    extend_agent = Agent(
-        name="Extend Agent",
-        instructions="You are an expert at integrating with Extend. You can help users manage virtual cards, view credit cards, and check transactions.",
-        tools=extend_openai_toolkit.get_tools(),
-        model="gpt-4o",
-    )
-
-    # Example interaction with the agent
-    print("Welcome to the Extend OpenAI Agent! Type 'quit' to exit.")
-    while True:
-        user_input = input("\nYour question: ").strip()
-        if user_input.lower() == "quit":
-            break
-
-        response = await Runner.run(
-            extend_agent,
-            user_input,
-            run_config=RunConfig(tracing_disabled=True, trace_include_sensitive_data=False),
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--fixture", action="store_true")
+    parser.add_argument("--environment", choices=("stage", "prod"))
+    args = parser.parse_args()
+    if not args.fixture and args.environment is None:
+        parser.error("Choose --environment explicitly")
+    transport = (
+        httpx.MockTransport(
+            lambda request: httpx.Response(
+                200, json={"virtualCards": [], "pagination": {"page": 0}}
+            )
         )
-        print("Agent response:", response.final_output)
+        if args.fixture
+        else None
+    )
+    async with httpx.AsyncClient(transport=transport, trust_env=False) as http:
+        async with ExtendClient(
+            auth=BasicAuth(
+                "synthetic" if args.fixture else os.environ["EXTEND_API_KEY"],
+                "synthetic" if args.fixture else os.environ["EXTEND_API_SECRET"],
+            ),
+            environment="stage" if args.fixture else args.environment,
+            http_client=http,
+        ) as sdk:
+            toolkit = ExtendOpenAIToolkit(ExtendAPI(sdk))
+            tool = next(tool for tool in toolkit.get_tools() if tool.name == "get_virtual_cards")
+            result = await tool.on_invoke_tool(None, "{}")
+            print(json.dumps(json.loads(result), indent=2))
 
 
 if __name__ == "__main__":
-    import asyncio
-
     asyncio.run(main())

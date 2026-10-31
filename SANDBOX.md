@@ -1,0 +1,9 @@
+# Named staging release smoke set
+
+Synthetic unit and adapter tests are separate from live release validation. The live smoke set has **not been run** for this change: no designated synthetic account/transaction/receipt fixture was supplied. Do not infer sandbox or production readiness from mocked HTTP tests.
+
+The account owner should provide a fixture JSON in a private directory, alongside a synthetic PDF/image. It identifies `environment: "stage"`, `synthetic: true`, `actor_id`, `organization_id`, `credit_card_id`, `transaction_id`, `expense_data` and `receipt_filename`. Supply only sandbox credentials in `EXTEND_SANDBOX_API_KEY` and `EXTEND_SANDBOX_API_SECRET`; the script ignores ambient SDK credentials and fixes its destination to stage.
+
+Run `python tools/sandbox_smoke.py /private/fixture.json` for named organization/card/report/policy reads. Add `--include-writes` only for the designated disposable fixture. That mode applies its specified expense data, uploads its receipt once, starts one automatch job and polls at most 20 times. The host callback approves only those exact fixture operations and the upload/job IDs produced by the run. It does not permit card closure or reminder sends. Output contains check names/status only; review fixture artifacts in the sandbox UI and clean them up through its normal controls.
+
+Record the SDK/toolkit commit, sandbox deployment, fixture owner and timestamp with results. Timeouts or partial results require reconciliation before rerunning writes. This smoke set is not default CI and must never target production. Toolkit publication remains gated on completing it plus the synthetic contract/client checks and the SDK 3.0.0 release.

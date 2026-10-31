@@ -1,7 +1,7 @@
 import re
-from typing import Dict, List, Optional, Union
+from typing import List, Optional, Union
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class ToolArguments(BaseModel):
@@ -13,8 +13,14 @@ class ToolArguments(BaseModel):
         if info.field_name.endswith("_id") and value is not None:
             if not isinstance(value, str) or not re.fullmatch(r"[A-Za-z0-9_-]{1,200}", value):
                 raise ValueError("Resource ID must be a single identifier")
+        if info.field_name in {"name", "code"} and value is not None:
+            if not value.strip() or len(value) > 255:
+                raise ValueError("Name/code must be nonblank and at most 255 characters")
+        if info.field_name == "page" and value is not None and value < 0:
+            raise ValueError("Page must be nonnegative")
+        if info.field_name in {"per_page", "count"} and value is not None and not 1 <= value <= 100:
+            raise ValueError("Page size must be between 1 and 100")
         return value
-
 
 
 class GetVirtualCards(ToolArguments):
@@ -55,75 +61,38 @@ class CancelVirtualCard(ToolArguments):
     virtual_card_id: str = Field(..., description="The ID of the virtual card to cancel.")
 
 
-class GetTransactions(ToolArguments):
-    """Schema for the `get_transactions` operation."""
+class TransactionFilters(ToolArguments):
+    from_date: Optional[str] = None
+    to_date: Optional[str] = None
+    status: Optional[Union[List[str], str]] = None
+    statuses: Optional[List[str]] = None
+    receipt_statuses: Optional[List[str]] = None
+    expense_category_statuses: Optional[List[str]] = None
+    missing_expense_categories: Optional[bool] = None
+    virtual_card_id: Optional[str] = None
+    min_amount_cents: Optional[int] = None
+    max_amount_cents: Optional[int] = None
+    receipt_missing: Optional[bool] = None
+    search_term: Optional[str] = None
+    sort_field: Optional[str] = None
 
-    page: int = Field(1, ge=1, description="One-based pagination page number, default is 1.")
-    per_page: int = Field(50, description="Number of transactions per page, default is 50.")
-    from_date: Optional[str] = Field(
-        None, description="Start date to filter transactions (YYYY-MM-DD)."
-    )
-    to_date: Optional[str] = Field(
-        None, description="End date to filter transactions (YYYY-MM-DD)."
-    )
-    status: Optional[Union[List[str], str]] = Field(
-        None, description="Filter transactions by status (e.g., PENDING, CLEARED, DECLINED, etc.)."
-    )
-    receipt_statuses: Optional[List[str]] = Field(
-        None, description="Filter transactions by receipt statuses."
-    )
-    expense_category_statuses: Optional[List[str]] = Field(
-        None,
-        description="Filter transactions by expense category status, such as Attached or Missing.",
-    )
-    missing_expense_categories: Optional[bool] = Field(
-        None, description="Filter transactions missing expense categorizations."
-    )
-    virtual_card_id: Optional[str] = Field(
-        None, description="Filter transactions by a specific virtual card ID."
-    )
-    min_amount_cents: Optional[int] = Field(
-        None, description="Minimum transaction amount in cents."
-    )
-    max_amount_cents: Optional[int] = Field(
-        None, description="Maximum transaction amount in cents."
-    )
-    receipt_missing: Optional[bool] = Field(
-        None, description="Filter transactions by whether they are missing a receipt."
-    )
-    search_term: Optional[str] = Field(None, description="Filter transactions by search term.")
-    sort_field: Optional[str] = Field(
-        None,
-        description="Field to sort by, with optional direction. Use 'recipientName', 'merchantName', 'amount', 'date' for ASC. Use '-recipientName', '-merchantName', '-amount', '-date' for DESC.",
-    )
+    @model_validator(mode="after")
+    def validate_filters(self):
+        from .filters import transaction_query
+
+        transaction_query(**self.model_dump(exclude={"page", "per_page"}))
+        return self
 
 
-class CountTransactions(ToolArguments):
-    """Schema for the `count_transactions` operation."""
+class GetTransactions(TransactionFilters):
+    """One-based transaction report pages; full-page counts are provisional."""
 
-    from_date: Optional[str] = Field(
-        None, description="Start date to filter transactions (YYYY-MM-DD)."
-    )
-    to_date: Optional[str] = Field(
-        None, description="End date to filter transactions (YYYY-MM-DD)."
-    )
-    status: Optional[List[str]] = Field(
-        None, description="Filter transactions by one or more statuses."
-    )
-    virtual_card_id: Optional[str] = Field(
-        None, description="Filter transactions by a specific virtual card ID."
-    )
-    min_amount_cents: Optional[int] = Field(
-        None, description="Minimum transaction amount in cents."
-    )
-    max_amount_cents: Optional[int] = Field(
-        None, description="Maximum transaction amount in cents."
-    )
-    search_term: Optional[str] = Field(None, description="Filter transactions by search term.")
-    expense_category_statuses: Optional[List[str]] = Field(
-        None,
-        description="Filter transactions by expense category status, such as Attached or Missing.",
-    )
+    page: int = Field(1, ge=1)
+    per_page: int = Field(50, ge=1, le=100)
+
+
+class CountTransactions(TransactionFilters):
+    """An explicit exact count with the same filters as get_transactions."""
 
 
 class GetTransactionDetail(ToolArguments):
@@ -134,11 +103,20 @@ class GetTransactionDetail(ToolArguments):
     )
 
 
+class ExpenseDetail(ToolArguments):
+    categoryId: str = Field(pattern=r"^[A-Za-z0-9_-]{1,200}$")
+    labelId: Optional[str] = Field(None, pattern=r"^[A-Za-z0-9_-]{1,200}$")
+
+
+class ExpenseDataUpdate(ToolArguments):
+    expenseDetails: Optional[List[ExpenseDetail]] = None
+
+
 class UpdateTransactionExpenseData(ToolArguments):
     """Schema for the `update_transaction_expense_data` operation."""
 
     transaction_id: str = Field(..., description="The unique identifier of the transaction.")
-    data: Dict = Field(
+    data: ExpenseDataUpdate = Field(
         ...,
         description=(
             "A dictionary representing the expense details to update. "
@@ -298,7 +276,7 @@ class CreateReceiptAttachmentSchema(ToolArguments):
         description="File path for the receipt attachment to be uploaded via multipart form data.",
     )
     transaction_id: Optional[str] = Field(
-        ...,
+        None,
         description="The optional unique identifier of the transaction to attach the receipt to.",
     )
 
