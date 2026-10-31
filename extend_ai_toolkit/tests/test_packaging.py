@@ -32,4 +32,4 @@ def test_framework_dependencies_are_available_as_extras():
     assert any(dependency.startswith("langchain") for dependency in extras["langchain"])
     assert any(dependency.startswith("mcp") for dependency in extras["mcp"])
     assert any(dependency.startswith("openai-agents") for dependency in extras["openai"])
-    assert any(dependency.startswith("crewai") for dependency in extras["crewai"])
+    assert "crewai" not in extras

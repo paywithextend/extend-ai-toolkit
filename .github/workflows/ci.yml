@@ -12,10 +12,9 @@ jobs:
       fail-fast: false
       matrix:
         python: ['3.11', '3.12', '3.13']
-        extra: [base, mcp, langchain, openai, crewai, terminal-openai, terminal-anthropic]
+        extra: [base, mcp, langchain, openai, terminal-openai, terminal-anthropic]
     env:
       OTEL_SDK_DISABLED: 'true'
-      CREWAI_TRACING_ENABLED: 'false'
       LANGSMITH_TRACING: 'false'
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5

@@ -3,14 +3,10 @@ import importlib.metadata
 import json
 import urllib.error
 import urllib.request
-from datetime import date
-from pathlib import Path
 
 # Packaging bootstrap tools are not part of the package's installed runtime graph.
 BOOTSTRAP = {"pip", "setuptools", "wheel"}
 failures = []
-reviewed = []
-exceptions = json.loads(Path(__file__).with_name("advisory-dispositions.json").read_text())
 
 for distribution in sorted(importlib.metadata.distributions(), key=lambda d: d.metadata["Name"]):
     name = distribution.metadata["Name"]
@@ -27,11 +23,6 @@ for distribution in sorted(importlib.metadata.distributions(), key=lambda d: d.m
     active = [v["id"] for v in metadata.get("vulnerabilities", []) if not v.get("withdrawn")]
     if active:
         entry = {"package": name, "version": distribution.version, "advisories": active}
-        disposition = exceptions.get(f"{name.lower()}=={distribution.version}")
-        if (disposition and date.today() <= date.fromisoformat(disposition["review_by"])
-                and set(active) <= set(disposition["advisories"])):
-            reviewed.append({**entry, "disposition": disposition["reason"], "review_by": disposition["review_by"]})
-        else:
-            failures.append(entry)
-print(json.dumps({"unreviewed_advisories": failures, "reviewed_advisories": reviewed}, indent=2))
+        failures.append(entry)
+print(json.dumps({"active_advisories": failures}, indent=2))
 raise SystemExit(bool(failures))

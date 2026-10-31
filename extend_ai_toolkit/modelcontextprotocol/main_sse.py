@@ -1,4 +1,4 @@
-"""The unauthenticated SSE service has been retired."""
+"""The unauthenticated SSE service is disabled."""
 
 
 def main():

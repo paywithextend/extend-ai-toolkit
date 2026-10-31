@@ -23,7 +23,6 @@ dependencies = [
 langchain = ["langchain-core>=1.7.3,<2"]
 mcp = ["mcp>=2.3.0,<3"]
 openai = ["openai-agents>=0.24.0,<0.25"]
-crewai = ["crewai>=1.15.33,<2"]
 terminal-openai = ["mcp>=2.3.0,<3", "openai>=3.42.0,<4"]
 terminal-anthropic = ["mcp>=2.3.0,<3", "anthropic>=2.3.0,<3"]
 dev = ["build>=1.6.1,<2", "pytest>=9.2,<10", "pytest-asyncio>=1.4,<2", "ruff>=0.17.3,<1"]

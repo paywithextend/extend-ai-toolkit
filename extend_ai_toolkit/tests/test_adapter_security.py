@@ -1,6 +1,5 @@
 """Real optional-adapter registration; no constructor mocks or external API calls."""
 
-import importlib.metadata
 import importlib.util
 import json
 from types import SimpleNamespace
@@ -15,7 +14,6 @@ from extend_ai_toolkit.shared import Configuration, ExtendAPI
 ADAPTERS = [
     ("langchain_core", "extend_ai_toolkit.langchain", "ExtendLangChainToolkit"),
     ("agents", "extend_ai_toolkit.openai", "ExtendOpenAIToolkit"),
-    ("crewai", "extend_ai_toolkit.crewai", "ExtendCrewAIToolkit"),
 ]
 
 
@@ -23,8 +21,6 @@ ADAPTERS = [
 async def test_real_adapter_registration_and_invocation(dependency, module, class_name):
     if importlib.util.find_spec(dependency) is None:
         pytest.skip(f"{dependency} extra is not installed")
-    if dependency == "agents" and importlib.metadata.version("openai").split(".")[0] != "3":
-        pytest.skip("OpenAI Agents extra is tested separately from CrewAI")
     cls = getattr(importlib.import_module(module), class_name)
     client = SimpleNamespace(
         virtual_cards=SimpleNamespace(close_virtual_card=AsyncMock(return_value={})),
@@ -39,10 +35,7 @@ async def test_real_adapter_registration_and_invocation(dependency, module, clas
         if dependency == "agents":
             await close.on_invoke_tool(None, json.dumps({"virtual_card_id": "v"}))
         else:
-            if dependency == "crewai":
-                await close.to_structured_tool().ainvoke({"virtual_card_id": "v"})
-            else:
-                await close.ainvoke({"virtual_card_id": "v"})
+            await close.ainvoke({"virtual_card_id": "v"})
     client.virtual_cards.close_virtual_card.assert_not_called()
     approved_api = ExtendAPI(
         client,
@@ -53,10 +46,6 @@ async def test_real_adapter_registration_and_invocation(dependency, module, clas
     approved = next(t for t in cls(approved_api).get_tools() if t.name == "close_virtual_card")
     if dependency == "agents":
         result = await approved.on_invoke_tool(None, json.dumps({"virtual_card_id": "v"}))
-    elif dependency == "crewai":
-        result = await approved.to_structured_tool().ainvoke({"virtual_card_id": "v"})
-        with pytest.raises(NotImplementedError):
-            approved.to_structured_tool().invoke({"virtual_card_id": "v"})
     else:
         result = await approved.ainvoke({"virtual_card_id": "v"})
     assert json.loads(result) == {}
@@ -66,8 +55,6 @@ async def test_real_adapter_registration_and_invocation(dependency, module, clas
 
 async def test_mcp_real_catalog_strictness_and_transport():
     pytest.importorskip("mcp")
-    if importlib.metadata.version("mcp").split(".")[0] != "2":
-        pytest.skip("CrewAI owns MCP 1.x internally; the toolkit MCP extra is tested separately")
     from extend_ai_toolkit.modelcontextprotocol.server import ExtendMCPServer
     from extend_ai_toolkit.shared.tools import tools
 
@@ -90,8 +77,6 @@ async def test_mcp_real_catalog_strictness_and_transport():
 
 async def test_stdio_initialization_and_list():
     pytest.importorskip("mcp")
-    if importlib.metadata.version("mcp").split(".")[0] != "2":
-        pytest.skip("CrewAI owns MCP 1.x internally; the toolkit MCP extra is tested separately")
     import os
     import sys
 
@@ -118,7 +103,5 @@ async def test_stdio_initialization_and_list():
 def test_terminal_provider_imports_without_the_other_provider(provider, module):
     if importlib.util.find_spec(provider) is None or importlib.util.find_spec("mcp") is None:
         pytest.skip("Selected terminal extra is not installed")
-    if importlib.metadata.version("mcp").split(".")[0] != "2":
-        pytest.skip("CrewAI internal MCP is not the terminal extra")
     importlib.import_module("extend_ai_toolkit.modelcontextprotocol.client.mcp_client")
     importlib.import_module("extend_ai_toolkit.modelcontextprotocol.client." + module)

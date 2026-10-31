@@ -1,8 +1,8 @@
 """Core Extend tool catalog and execution helpers.
 
 This module is intentionally framework-neutral. It exposes structured tool
-metadata and raw tool execution without requiring LangChain, MCP, OpenAI Agents,
-or CrewAI adapter dependencies.
+metadata and raw tool execution without requiring LangChain, MCP or OpenAI Agents
+adapter dependencies.
 """
 
 from __future__ import annotations

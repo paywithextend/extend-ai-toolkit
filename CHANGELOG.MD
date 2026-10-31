@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - Unreleased
+
+### Removed
+
+- Removed the dedicated CrewAI adapter, optional extra, example, and agent/task/crew factories. See MIGRATION.md for the breaking integration change.
+- Removed CrewAI-only dependency constraints, CI coverage and the ChromaDB advisory exception.
+
 ## [1.3.0] - 2025-10-27
 
 ### Added
