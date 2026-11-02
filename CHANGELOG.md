@@ -5,10 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.0.0] - Unreleased
+## [2.0.0]
+
+### Changed
+
+- Require Python 3.11+ and SDK 3.0.0, with explicit environment selection.
+- Default to 16 read tools; enable writes only through a trusted host execution policy.
+- Return structured JSON results and delegate endpoint contracts to SDK resource methods.
+- Use local stdio MCP and separately installed optional framework/provider integrations.
+
+### Added
+
+- Host-enforced operation approvals and receipt-directory, size and file-identity checks.
+- OpenAI and Anthropic terminal clients with native tool messages, bounded tool loops and asynchronous cleanup.
+- Receipt workflow failures preserve receipt/job identifiers for recovery without repeating writes.
+- Capability documentation and offline adapter, contract and client validation.
+- Automatic release validation on merges to main, with protected PyPI approval and Trusted Publishing.
+
+### Fixed
+
+- Transaction pagination and filter mapping, explicit expense-label clearing and MCP tool-schema compatibility.
+- Client cleanup on failed initialization and validation of polling/tool-loop limits before execution.
 
 ### Removed
 
+- The unauthenticated SSE server launcher; use the local stdio MCP integration.
 - Removed the dedicated CrewAI adapter, optional extra, example, and agent/task/crew factories. See MIGRATION.md for the breaking integration change.
 - Removed CrewAI-only dependency constraints, CI coverage and the ChromaDB advisory exception.
 

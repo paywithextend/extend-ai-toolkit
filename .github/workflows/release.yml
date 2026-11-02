@@ -1,19 +1,50 @@
 name: Publish reviewed toolkit
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
-    inputs:
-      tag:
-        description: Reviewed version tag reachable from development (for example v2.0.0)
-        required: true
-        type: string
 permissions:
   contents: read
 concurrency:
-  group: toolkit-release-${{ inputs.tag }}
+  group: toolkit-release-main
   cancel-in-progress: false
 jobs:
+  prepare:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+      publish: ${{ steps.version.outputs.publish }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.11'
+      - name: Select the version from the merged commit
+        id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release list --limit 1000 --json tagName > /tmp/releases.json
+          python - <<'PYTHON'
+          import ast, json, os, pathlib, re, subprocess
+          version = ast.literal_eval(ast.parse(pathlib.Path('extend_ai_toolkit/__version__.py').read_text()).body[0].value)
+          if not re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+', version):
+              raise SystemExit('Expected a stable semantic version')
+          tag = 'v' + version
+          released = any(item['tagName'] == tag for item in json.loads(pathlib.Path('/tmp/releases.json').read_text()))
+          if not released:
+              existing = subprocess.run(['git', 'rev-parse', '--verify', f'refs/tags/{tag}^{{commit}}'], capture_output=True, text=True)
+              if existing.returncode == 0 and existing.stdout.strip() != os.environ['GITHUB_SHA']:
+                  raise SystemExit('Release tag already points to another commit; do not reuse versions')
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f'tag={tag}\npublish={str(not released).lower()}\n')
+          PYTHON
   build:
-    if: github.ref == 'refs/heads/development'
+    needs: prepare
+    if: needs.prepare.outputs.publish == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
@@ -22,26 +53,17 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.11'
-      - name: Validate and check out the reviewed release tag
-        env:
-          RELEASE_TAG: ${{ inputs.tag }}
-        run: |
-          python -c "import os,re; assert re.fullmatch(r'v[0-9]+\.[0-9]+\.[0-9]+', os.environ['RELEASE_TAG'])"
-          git fetch origin "refs/tags/$RELEASE_TAG:refs/tags/$RELEASE_TAG"
-          git merge-base --is-ancestor "$RELEASE_TAG^{commit}" origin/development
-          git checkout --detach "$RELEASE_TAG"
-          python -c "import ast,os,pathlib; version=ast.literal_eval(ast.parse(pathlib.Path('extend_ai_toolkit/__version__.py').read_text()).body[0].value); assert 'v'+version == os.environ['RELEASE_TAG']"
-      - run: python -m pip install ".[mcp,langchain,openai,terminal-anthropic]" pytest==9.2.0 pytest-asyncio==1.4.1 ruff==0.17.3 build==1.6.1
+      - run: python -m pip install ".[dev,mcp,langchain,openai,terminal-openai,terminal-anthropic]"
       - run: make lint
-      - run: python -m pytest -q extend_ai_toolkit/tests/test_security.py extend_ai_toolkit/tests/test_adapter_security.py extend_ai_toolkit/tests/test_contracts.py extend_ai_toolkit/tests/test_client_workflows.py
+      - run: make test
       - run: python -m build
       - name: Validate the built wheel and its runtime graph
         env:
-          RELEASE_TAG: ${{ inputs.tag }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
         run: |
           python -m venv /tmp/release-wheel
           /tmp/release-wheel/bin/python -m pip install dist/*.whl
-          /tmp/release-wheel/bin/python -I -c "import extend_ai_toolkit,os; assert 'v'+extend_ai_toolkit.__version__ == os.environ['RELEASE_TAG']"
+          /tmp/release-wheel/bin/python -I -c "import extend_ai_toolkit as t,os; assert 'v'+t.__version__ == os.environ['RELEASE_TAG']; assert len(t.list_tool_specs()) == 16"
           /tmp/release-wheel/bin/python tools/check_advisories.py
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -49,14 +71,51 @@ jobs:
           path: dist/*
           if-no-files-found: error
   publish:
-    needs: build
+    needs: [prepare, build]
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
       id-token: write
+      contents: write
     steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.11'
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: toolkit-distributions
           path: dist
+      - name: Reserve the version at this commit and verify existing PyPI files
+        env:
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+        run: |
+          if git ls-remote --exit-code origin "refs/tags/$RELEASE_TAG"; then
+            git fetch origin "refs/tags/$RELEASE_TAG:refs/tags/$RELEASE_TAG"
+            test "$(git rev-parse "$RELEASE_TAG^{commit}")" = "$GITHUB_SHA"
+          else
+            git push origin "$GITHUB_SHA:refs/tags/$RELEASE_TAG"
+          fi
+          python tools/verify_release_files.py --project extend-ai-toolkit --version "${RELEASE_TAG#v}"
       - uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # release/v1
+        with:
+          skip-existing: true
+      - name: Verify complete publication matches the approved artifacts
+        env:
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+        run: python tools/verify_release_files.py --project extend-ai-toolkit --version "${RELEASE_TAG#v}" --complete
+  release:
+    needs: [prepare, publish]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - name: Create the GitHub release for the reserved version tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+        run: |
+          gh release create "$RELEASE_TAG" --verify-tag --title "$RELEASE_TAG" --notes-file CHANGELOG.md
