@@ -106,7 +106,7 @@ async def cancel_virtual_card(extend: ExtendClient, virtual_card_id: str) -> Dic
 
 async def get_transactions(
     extend: ExtendClient,
-    page: int = 0,
+    page: int = 1,
     per_page: int = 50,
     from_date: Optional[str] = None,
     to_date: Optional[str] = None,
@@ -126,7 +126,7 @@ async def get_transactions(
     Get a list of recent transactions
 
     Args:
-        page (int): pagination page number,
+        page (int): One-based pagination page number. Defaults to 1.
         per_page (int): number of transactions per page,
         from_date (Optional[str]): Start date (YYYY-MM-DD)
         to_date (Optional[str]): End date (YYYY-MM-DD)

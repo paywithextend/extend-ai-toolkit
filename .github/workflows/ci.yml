@@ -21,12 +21,12 @@ jobs:
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: ${{ matrix.python }}
-      # Temporary review prerequisite: fixed SDK PR 29, exact immutable source.
+      # Temporary review prerequisite: merged SDK 3.0 source, exact immutable commit.
       # Runtime metadata always names the registry version. Remove this checkout after 3.0.0 publishes.
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           repository: paywithextend/extend-python
-          ref: c092c8414a0d45a8a7aa56765e792520e20d6b31
+          ref: 2fc7b6a21cd90ea0b3d2946c536ee14ad79ba595
           path: .sdk-source
       - run: |
           python -m pip install build==1.6.1
@@ -57,7 +57,7 @@ jobs:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           repository: paywithextend/extend-python
-          ref: c092c8414a0d45a8a7aa56765e792520e20d6b31
+          ref: 2fc7b6a21cd90ea0b3d2946c536ee14ad79ba595
           path: .sdk-source
       - run: |
           python -m pip install ./.sdk-source

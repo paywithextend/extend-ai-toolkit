@@ -58,7 +58,7 @@ class CancelVirtualCard(ToolArguments):
 class GetTransactions(ToolArguments):
     """Schema for the `get_transactions` operation."""
 
-    page: int = Field(0, description="Pagination page number, default is 0.")
+    page: int = Field(1, ge=1, description="One-based pagination page number, default is 1.")
     per_page: int = Field(50, description="Number of transactions per page, default is 50.")
     from_date: Optional[str] = Field(
         None, description="Start date to filter transactions (YYYY-MM-DD)."

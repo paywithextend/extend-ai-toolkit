@@ -89,7 +89,7 @@ class MCPClient:
 
         response = await self.session.list_tools()
         return [
-            {"name": tool.name, "description": tool.description, "input_schema": tool.inputSchema}
+            {"name": tool.name, "description": tool.description, "input_schema": tool.input_schema}
             for tool in response.tools
         ]
 
