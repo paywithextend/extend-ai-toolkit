@@ -231,3 +231,38 @@ async def test_cancelled_write_keeps_reconciliation_ledger():
         await task
     assert await client.process_query("Retry") == "done"
     assert session.call_tool.await_count == 1
+
+
+async def test_provider_closes_when_mcp_initialization_fails(monkeypatch):
+    from contextlib import asynccontextmanager
+
+    from mcp import StdioServerParameters
+
+    from extend_ai_toolkit.modelcontextprotocol.client import mcp_client
+
+    provider = SimpleNamespace(aclose=AsyncMock())
+    session = SimpleNamespace(initialize=AsyncMock(side_effect=RuntimeError("handshake failed")))
+
+    @asynccontextmanager
+    async def streams(*args):
+        yield (object(), object())
+
+    @asynccontextmanager
+    async def session_context(*args):
+        yield session
+
+    monkeypatch.setattr(mcp_client, "stdio_client", streams)
+    monkeypatch.setattr(mcp_client, "ClientSession", session_context)
+    client = MCPClient(provider)
+    with pytest.raises(RuntimeError, match="handshake failed"):
+        async with client.connect(StdioServerParameters(command="synthetic")):
+            pytest.fail("A failed handshake must not yield a client")
+    provider.aclose.assert_awaited_once()
+    assert client.session is None
+
+
+@pytest.mark.parametrize("option", ["max_rounds", "max_calls"])
+@pytest.mark.parametrize("value", [1.5, True, "2"])
+def test_conversation_limits_require_integers(option, value):
+    with pytest.raises(ValueError):
+        MCPClient(SimpleNamespace(), **{option: value})

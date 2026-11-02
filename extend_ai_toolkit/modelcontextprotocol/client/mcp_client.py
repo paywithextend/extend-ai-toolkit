@@ -18,7 +18,10 @@ _SCHEMAS = {tool.name: tool.args_schema for tool in catalog}
 
 class MCPClient:
     def __init__(self, llm_client, *, max_tokens=1000, max_rounds=8, max_calls=32):
-        if not 1 <= max_rounds <= 32 or not 1 <= max_calls <= 128:
+        if (
+            type(max_rounds) is not int or not 1 <= max_rounds <= 32
+            or type(max_calls) is not int or not 1 <= max_calls <= 128
+        ):
             raise ValueError("Conversation limits are out of range")
         self.llm_client = llm_client
         self.max_tokens = max_tokens
@@ -36,15 +39,15 @@ class MCPClient:
             raise ValueError(
                 "Use StdioServerParameters; unauthenticated remote URLs are unsupported"
             )
-        async with stdio_client(parameters) as (read, write):
-            async with ClientSession(read, write) as session:
-                await session.initialize()
-                self.session = session
-                try:
+        try:
+            async with stdio_client(parameters) as (read, write):
+                async with ClientSession(read, write) as session:
+                    await session.initialize()
+                    self.session = session
                     yield self
-                finally:
-                    self.session = None
-                    await self.llm_client.aclose()
+        finally:
+            self.session = None
+            await self.llm_client.aclose()
 
     async def list_available_tools(self):
         if self.session is None:

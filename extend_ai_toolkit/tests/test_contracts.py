@@ -339,3 +339,21 @@ async def test_custom_field_consumer_contracts(name, arguments, wire):
         async with ExtendClient(BasicAuth("synthetic", "secret"), environment="stage", http_client=transport) as client:
             await execute_tool(client, name, arguments, policy=host_policy())
     assert len(seen) == 1
+
+
+@pytest.mark.parametrize("max_polls", [1.5, True, "2"])
+async def test_invalid_poll_limit_rejected_before_upload(max_polls):
+    from extend_ai_toolkit.workflows import upload_and_automatch
+
+    api = SimpleNamespace(execute=AsyncMock(return_value={"id": "synthetic", "tasks": []}))
+    with pytest.raises(ValueError):
+        await upload_and_automatch(api, "synthetic.png", max_polls=max_polls)
+    api.execute.assert_not_awaited()
+
+
+@pytest.mark.parametrize("interval", [True, "1", float("nan"), float("inf")])
+async def test_invalid_poll_interval_rejected_before_upload(interval):
+    api = SimpleNamespace(execute=AsyncMock())
+    with pytest.raises(ValueError):
+        await upload_and_automatch(api, "synthetic.png", interval=interval)
+    api.execute.assert_not_awaited()

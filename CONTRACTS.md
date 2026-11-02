@@ -1,6 +1,9 @@
 # Endpoint contract review
 
-Reviewed 2026-10-31 against Extend development commit `a8b8c142c6cbddfb55389039ecbcf900ed362495`, refreshed before implementation. Cross-checked the corresponding request builders and response consumers in the current application source. This is source evidence, not evidence that a particular sandbox or production deployment contains that commit. Contract owner: Extend API maintainers. Synthetic request fixtures are in `extend_ai_toolkit/tests/fixtures/contracts.json` and cover every catalog entry.
+This document describes the request and response behavior used by the toolkit.
+Synthetic fixtures in `extend_ai_toolkit/tests/fixtures/contracts.json` cover every
+catalog entry. Endpoint availability also depends on the API environment and
+account permissions; a passing fixture does not establish live availability.
 
 | Tool family | Method and path | Contract notes |
 | --- | --- | --- |
@@ -29,9 +32,8 @@ additional bulk, vault and approval workflows outside this toolkit's catalog.
 
 ## Gateway validation limits
 
-Staging checks on 2026-10-31 returned 403 for organization listing and individual
-expense-label lookup through the public API gateway. Receipt upload succeeded,
-but deletion was not exposed through that gateway. An implemented application
-endpoint is not sufficient evidence of public gateway exposure. These helpers
-require gateway availability in addition to credentials and backend permissions;
-the synthetic fixtures do not establish deployed availability.
+Some API gateways expose fewer routes than the application API. Organization
+listing, individual expense-label lookup, and receipt deletion may be unavailable
+even when related read or upload operations work. Verify the routes needed by your
+integration in the target environment. A 403 response can indicate route availability
+or authorization; it should not be treated as an empty successful response.

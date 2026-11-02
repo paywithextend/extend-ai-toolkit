@@ -9,7 +9,10 @@ async def upload_and_automatch(api, file_path: str, *, max_polls: int = 20, inte
     A timeout returns the job and receipt identifiers for later reconciliation.
     Transport failures propagate; callers must reconcile before repeating writes.
     """
-    if not 1 <= max_polls <= 120 or not 0 <= interval <= 30:
+    if (
+        type(max_polls) is not int or not 1 <= max_polls <= 120
+        or type(interval) not in (int, float) or not 0 <= interval <= 30
+    ):
         raise ValueError("Polling limits are out of range")
     receipt = await api.execute("create_receipt_attachment", {"file_path": file_path})
     job = await api.execute("automatch_receipts", {"receipt_attachment_ids": [receipt["id"]]})
