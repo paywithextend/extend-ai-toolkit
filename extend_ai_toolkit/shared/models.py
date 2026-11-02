@@ -1,10 +1,13 @@
 from dataclasses import dataclass
-from typing import Optional, TypedDict
+from typing import Optional
+
+from typing_extensions import TypedDict
 
 from .enums import Product
 
 
 class Actions(TypedDict, total=False):
+    send: Optional[bool]
     create: Optional[bool]
     update: Optional[bool]
     read: Optional[bool]

@@ -1,108 +1,94 @@
-import inspect
-import logging
-from typing import Any
+"""Local stdio MCP adapter using the authoritative shared catalog."""
 
-from mcp.server import FastMCP
-from mcp.types import AnyFunction
+import json
+from contextlib import asynccontextmanager
 
-from extend_ai_toolkit.shared import Configuration
-from extend_ai_toolkit.shared import ExtendAPI
-from extend_ai_toolkit.shared import ExtendAPITools
-from extend_ai_toolkit.shared import functions
-from extend_ai_toolkit.shared import tools, Tool
-from extend_ai_toolkit.shared.auth import Authorization
-from ..__version__ import __version__ as _version
+from extend.client import ExtendAPIError, ExtendTransportError
+from mcp.server import MCPServer
+from mcp.types import CallToolResult, TextContent, ToolAnnotations
+from mcp.types import Tool as MCPTool
+from pydantic import ValidationError
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+from ..__version__ import __version__
+from ..policy import ToolPermissionError
+from ..shared.api import ExtendAPI
+from ..shared.tools import tools
 
 
-class ExtendMCPServer(FastMCP):
-    def __init__(self, extend_api: ExtendAPI, configuration: Configuration):
-        super().__init__(
-            name="Extend MCP Server",
-            version=_version
+class ExtendMCPServer(MCPServer):
+    def __init__(self, extend_api: ExtendAPI, configuration=None):
+        self.api = (
+            extend_api.restricted_to(configuration) if configuration is not None else extend_api
         )
 
-        self._extend = extend_api
+        @asynccontextmanager
+        async def lifespan(server):
+            try:
+                yield {}
+            finally:
+                await self.api.aclose()
 
-        for tool in configuration.allowed_tools(tools):
-            fn: Any = None
-            match tool.method.value:
-                case ExtendAPITools.GET_VIRTUAL_CARDS.value:
-                    fn = functions.get_virtual_cards
-                case ExtendAPITools.GET_VIRTUAL_CARD_DETAIL.value:
-                    fn = functions.get_virtual_card_detail
-                case ExtendAPITools.CANCEL_VIRTUAL_CARD.value:
-                    fn = functions.cancel_virtual_card
-                case ExtendAPITools.CLOSE_VIRTUAL_CARD.value:
-                    fn = functions.close_virtual_card
-                case ExtendAPITools.GET_TRANSACTIONS.value:
-                    fn = functions.get_transactions
-                case ExtendAPITools.GET_TRANSACTION_DETAIL.value:
-                    fn = functions.get_transaction_detail
-                case ExtendAPITools.GET_CREDIT_CARDS.value:
-                    fn = functions.get_credit_cards
-                case ExtendAPITools.GET_CREDIT_CARD_DETAIL.value:
-                    fn = functions.get_credit_card_detail
-                case ExtendAPITools.GET_EXPENSE_CATEGORIES.value:
-                    fn = functions.get_expense_categories
-                case ExtendAPITools.GET_EXPENSE_CATEGORY.value:
-                    fn = functions.get_expense_category
-                case ExtendAPITools.GET_EXPENSE_CATEGORY_LABELS.value:
-                    fn = functions.get_expense_category_labels
-                case ExtendAPITools.CREATE_EXPENSE_CATEGORY.value:
-                    fn = functions.create_expense_category
-                case ExtendAPITools.CREATE_EXPENSE_CATEGORY_LABEL.value:
-                    fn = functions.create_expense_category_label
-                case ExtendAPITools.UPDATE_EXPENSE_CATEGORY.value:
-                    fn = functions.update_expense_category
-                case ExtendAPITools.UPDATE_EXPENSE_CATEGORY_LABEL.value:
-                    fn = functions.update_expense_category_label
-                case ExtendAPITools.PROPOSE_EXPENSE_CATEGORY_LABEL.value:
-                    fn = functions.propose_transaction_expense_data
-                case ExtendAPITools.CONFIRM_EXPENSE_CATEGORY_LABEL.value:
-                    fn = functions.confirm_transaction_expense_data
-                case ExtendAPITools.UPDATE_TRANSACTION_EXPENSE_DATA.value:
-                    fn = functions.update_transaction_expense_data
-                case ExtendAPITools.CREATE_RECEIPT_ATTACHMENT.value:
-                    fn = functions.create_receipt_attachment
-                case ExtendAPITools.AUTOMATCH_RECEIPTS.value:
-                    fn = functions.automatch_receipts
-                case ExtendAPITools.GET_AUTOMATCH_STATUS.value:
-                    fn = functions.get_automatch_status
-                case ExtendAPITools.SEND_RECEIPT_REMINDER.value:
-                    fn = functions.send_receipt_reminder
-                case _:
-                    raise ValueError(f"Invalid tool {tool}")
+        super().__init__(name="Extend", version=__version__, lifespan=lifespan)
+        self._catalog = tuple(tool for tool in tools if tool.name in self.api.policy.allowed_tools)
 
-            self.add_tool(
-                self._handle_tool_request(tool, fn),
-                tool.name,
-                tool.description
+    async def list_tools(self):
+        return [
+            MCPTool(
+                name=tool.name,
+                description=tool.description,
+                input_schema=tool.args_schema.model_json_schema(),
+                annotations=ToolAnnotations(
+                    readOnlyHint=tool.side_effect_class == "read_only",
+                    destructiveHint=tool.side_effect_class == "destructive",
+                    idempotentHint=tool.side_effect_class == "read_only",
+                    openWorldHint=True,
+                ),
             )
-            
-    @classmethod
-    def from_auth(cls, auth: Authorization, configuration: Configuration):
-        return cls(extend_api=ExtendAPI.from_auth(auth), configuration=configuration)
+            for tool in self._catalog
+        ]
+
+    async def call_tool(self, name, arguments, context=None):
+        # Validate the original JSON before any framework coercion or defaulting.
+        try:
+            result = await self.api.execute(name, arguments)
+        except (ValidationError, ValueError):
+            return CallToolResult(is_error=True, content=[TextContent(type="text", text="Invalid tool arguments")])
+        except ToolPermissionError:
+            return CallToolResult(is_error=True, content=[TextContent(type="text", text="Host policy denied this invocation")])
+        except ExtendAPIError as exc:
+            return CallToolResult(is_error=True, content=[TextContent(type="text", text=f"Extend API returned HTTP {exc.response.status_code}")])
+        except ExtendTransportError:
+            return CallToolResult(is_error=True, content=[TextContent(type="text", text="Extend transport failed; reconcile write outcomes before retrying")])
+        except Exception:
+            return CallToolResult(is_error=True, content=[TextContent(type="text", text="Extend tool failed; consult the host without disclosing request data")])
+        return CallToolResult(
+            content=[TextContent(type="text", text=json.dumps(result))],
+            structured_content=result if isinstance(result, dict) else {"result": result},
+        )
 
     @classmethod
-    def default_instance(cls, api_key: str, api_secret: str, configuration: Configuration):
-        return cls(extend_api=ExtendAPI.default_instance(api_key, api_secret), configuration=configuration)
+    def from_auth(cls, auth, configuration=None, **host_options):
+        return cls(ExtendAPI.from_auth(auth, **host_options), configuration)
 
-    def _handle_tool_request(self, tool: Tool, fn: AnyFunction):
-        async def resource_handler(*args, **kwargs):
-            result = await self._extend.run(tool.method.value, *args, **kwargs)
-            return {
-                "content": [
-                    {
-                        "type": "text",
-                        "text": str(result)
-                    }
-                ]
-            }
+    @classmethod
+    def default_instance(cls, api_key, api_secret, configuration=None, **host_options):
+        return cls(ExtendAPI.default_instance(api_key, api_secret, **host_options), configuration)
 
-        orig_sig = inspect.signature(fn)
-        new_params = list(orig_sig.parameters.values())[1:]
-        resource_handler.__signature__ = inspect.Signature(new_params)
-        return resource_handler
+    def run(self, transport="stdio", **kwargs):
+        if transport != "stdio" or kwargs:
+            raise ValueError(
+                "Only local stdio is supported; remote hosting requires a separate authenticated service"
+            )
+        return super().run(transport="stdio")
+
+    async def run_sse_async(self, *args, **kwargs):
+        raise ValueError("SSE hosting is disabled; use stdio")
+
+    async def run_streamable_http_async(self, *args, **kwargs):
+        raise ValueError("Remote HTTP hosting is not supported")
+
+    def sse_app(self, *args, **kwargs):
+        raise ValueError("SSE hosting is disabled; use stdio")
+
+    def streamable_http_app(self, *args, **kwargs):
+        raise ValueError("Remote HTTP hosting is not supported")

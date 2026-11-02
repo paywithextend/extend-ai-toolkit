@@ -1,6 +1,6 @@
 import json
 import os
-from typing import List, Dict, Any, Tuple, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from anthropic import AsyncAnthropic
 
@@ -11,18 +11,14 @@ class AnthropicChatClient(ChatClient):
     """Implementation of ChatClient for Anthropic API"""
 
     def __init__(
-            self,
-            model_name="claude-3-7-sonnet-20250219",
-            system_prompt="You are a helpful assistant."):
+        self, model_name="claude-3-7-sonnet-20250219", system_prompt="You are a helpful assistant."
+    ):
         self.model_name = model_name
         self.client = AsyncAnthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
         self.system_prompt = system_prompt
 
     async def generate_completion(
-            self,
-            messages: List[Dict[str, Any]],
-            functions: List[Dict[str, Any]],
-            max_tokens: int
+        self, messages: List[Dict[str, Any]], functions: List[Dict[str, Any]], max_tokens: int
     ) -> Tuple[Optional[str], Optional[Dict]]:
         # Convert OpenAI-style messages to Anthropic format
         anthropic_messages = self._convert_messages(messages)
@@ -35,7 +31,7 @@ class AnthropicChatClient(ChatClient):
             max_tokens=max_tokens,
             messages=anthropic_messages,
             tools=tools,
-            system=self.system_prompt
+            system=self.system_prompt,
         )
 
         # Process all content blocks and prioritize tool_use if present
@@ -62,7 +58,7 @@ class AnthropicChatClient(ChatClient):
 
                     tool_use_info = {
                         "name": name if name else "unknown_tool",
-                        "arguments": input_json
+                        "arguments": input_json,
                     }
                 elif content_block.type == "text":
                     text_content.append(str(content_block.text))
@@ -77,9 +73,8 @@ class AnthropicChatClient(ChatClient):
             return combined_text, None
 
     async def generate_with_tool_result(
-            self,
-            messages: List[Dict[str, Any]],
-            max_tokens: int) -> str:
+        self, messages: List[Dict[str, Any]], max_tokens: int
+    ) -> str:
         # Convert OpenAI-style messages to Anthropic format
         anthropic_messages = self._convert_messages(messages)
 
@@ -87,7 +82,7 @@ class AnthropicChatClient(ChatClient):
             model=self.model_name,
             max_tokens=max_tokens,
             messages=anthropic_messages,
-            system=self.system_prompt
+            system=self.system_prompt,
         )
 
         if response.content and len(response.content) > 0:
@@ -109,10 +104,7 @@ class AnthropicChatClient(ChatClient):
 
         for i, msg in enumerate(openai_messages):
             if msg["role"] == "user":
-                anthropic_messages.append({
-                    "role": "user",
-                    "content": msg["content"]
-                })
+                anthropic_messages.append({"role": "user", "content": msg["content"]})
             elif msg["role"] == "assistant":
                 # Handle potential function calls in assistant messages
                 if msg.get("function_call"):
@@ -128,35 +120,42 @@ class AnthropicChatClient(ChatClient):
                     except json.JSONDecodeError:
                         input_data = {}
 
-                    anthropic_messages.append({
-                        "role": "assistant",
-                        "content": [{
-                            "type": "tool_use",
-                            "id": tool_use_id,
-                            "name": msg["function_call"]["name"],
-                            "input": input_data
-                        }]
-                    })
+                    anthropic_messages.append(
+                        {
+                            "role": "assistant",
+                            "content": [
+                                {
+                                    "type": "tool_use",
+                                    "id": tool_use_id,
+                                    "name": msg["function_call"]["name"],
+                                    "input": input_data,
+                                }
+                            ],
+                        }
+                    )
                 else:
-                    anthropic_messages.append({
-                        "role": "assistant",
-                        "content": msg["content"]
-                    })
+                    anthropic_messages.append({"role": "assistant", "content": msg["content"]})
             elif msg["role"] == "function":
                 # Convert function messages to tool responses
                 # Find the corresponding tool use ID if available
                 # Default to a generated ID if not found
-                tool_use_id = tool_use_ids.get(len(anthropic_messages) - 1, f"tool_{tool_use_count}")
+                tool_use_id = tool_use_ids.get(
+                    len(anthropic_messages) - 1, f"tool_{tool_use_count}"
+                )
                 tool_use_count += 1
 
-                anthropic_messages.append({
-                    "role": "user",
-                    "content": [{
-                        "type": "tool_result",
-                        "tool_use_id": tool_use_id,  # Using tool_use_id as required by Anthropic API
-                        "content": msg["content"]
-                    }]
-                })
+                anthropic_messages.append(
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "tool_result",
+                                "tool_use_id": tool_use_id,  # Using tool_use_id as required by Anthropic API
+                                "content": msg["content"],
+                            }
+                        ],
+                    }
+                )
 
         return anthropic_messages
 
@@ -165,10 +164,12 @@ class AnthropicChatClient(ChatClient):
         tools = []
 
         for func in functions:
-            tools.append({
-                "name": func["name"],
-                "description": func.get("description", ""),
-                "input_schema": func["parameters"]
-            })
+            tools.append(
+                {
+                    "name": func["name"],
+                    "description": func.get("description", ""),
+                    "input_schema": func["parameters"],
+                }
+            )
 
         return tools

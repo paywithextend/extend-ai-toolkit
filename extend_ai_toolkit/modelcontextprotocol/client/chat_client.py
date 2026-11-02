@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any, Tuple, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 
 class ChatClient(ABC):
@@ -10,10 +10,8 @@ class ChatClient(ABC):
 
     @abstractmethod
     async def generate_completion(
-            self,
-            messages: List[Dict[str, Any]],
-            functions: List[Dict[str, Any]],
-            max_tokens: int) -> Tuple[Optional[str], Optional[Dict]]:
+        self, messages: List[Dict[str, Any]], functions: List[Dict[str, Any]], max_tokens: int
+    ) -> Tuple[Optional[str], Optional[Dict]]:
         """
         Generate a completion from the LLM.
 
@@ -32,9 +30,8 @@ class ChatClient(ABC):
 
     @abstractmethod
     async def generate_with_tool_result(
-            self,
-            messages: List[Dict[str, Any]],
-            max_tokens: int) -> str:
+        self, messages: List[Dict[str, Any]], max_tokens: int
+    ) -> str:
         """
         Generate a follow-up completion after a tool call.
 

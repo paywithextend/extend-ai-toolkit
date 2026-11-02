@@ -9,6 +9,7 @@ def add_line(label, value):
         return f"  {label}: {value}\n"
     return ""
 
+
 def format_virtual_cards_list(response: Dict) -> str:
     """Format the virtual cards list response"""
     pagination = response.get("pagination", {})
@@ -105,7 +106,7 @@ def format_credit_card_detail(response: Dict) -> str:
     if not card:
         return "No credit card found."
 
-    card_features = card['features'] or {}
+    card_features = card["features"] or {}
     return (
         f"Credit Card Details:\n\n"
         f"- ID: {card['id']}\n"
@@ -137,47 +138,50 @@ def format_transactions_list(response: Dict) -> str:
     # Add pagination info
     current_page = report.get("page", 1)
     total_pages = report.get("numPages", 1)
-    per_page = report.get("per_page", 25)
     total_count = report.get("count", 0)
 
     result = f"Recent Transactions (Page {current_page} of {total_pages}, {total_count} total):\n\n"
 
     for txn in transactions:
         # Always include these required fields
-        txn_id = txn.get('id')
-        amount_cents = txn.get('clearingBillingAmountCents', txn.get('authBillingAmountCents', 0))
-        status = txn.get('status')
-        
+        txn_id = txn.get("id")
+        amount_cents = txn.get("clearingBillingAmountCents", txn.get("authBillingAmountCents", 0))
+        status = txn.get("status")
+
         # Start the transaction entry
         result += f"- ID: {txn_id}\n"
         result += f"  Amount: ${amount_cents / 100:.2f}\n"
         result += f"  Status: {status}\n"
         # Date can be under authedAt or clearedAt; skip if neither is provided
-        txn_date = txn.get('authedAt', txn.get('clearedAt'))
+        txn_date = txn.get("authedAt", txn.get("clearedAt"))
         result += add_line("Date", txn_date)
-        
+
         # Optional fields – add only if they have a valid value
-        result += add_line("VCN ID", txn.get('virtualCardId'))
-        result += add_line("VCN Name", txn.get('virtualCardDisplayName'))
-        result += add_line("Cardholder Name", txn.get('cardholderName'))
-        result += add_line("Recipient Name", txn.get('recipientName'))
-        result += add_line("Merchant", txn.get('merchantName'))
-        result += add_line("MCC", txn.get('mccDescription'))
-        result += add_line("Notes", txn.get('notes'))
-        result += add_line("Review Status", txn.get('reviewStatus'))
-        result += add_line("Receipt Required", txn.get('receiptRequired'))
-        result += add_line("Receipt Attachments Count", txn.get('attachmentsCount'))
-        
+        result += add_line("VCN ID", txn.get("virtualCardId"))
+        result += add_line("VCN Name", txn.get("virtualCardDisplayName"))
+        result += add_line("Cardholder Name", txn.get("cardholderName"))
+        result += add_line("Recipient Name", txn.get("recipientName"))
+        result += add_line("Merchant", txn.get("merchantName"))
+        result += add_line("MCC", txn.get("mccDescription"))
+        result += add_line("Notes", txn.get("notes"))
+        result += add_line("Review Status", txn.get("reviewStatus"))
+        result += add_line("Receipt Required", txn.get("receiptRequired"))
+        result += add_line("Receipt Attachments Count", txn.get("attachmentsCount"))
+
         # For fields like connectedPlatforms that require some processing,
         # compute the value first
-        synced_to_erp = True if txn.get('connectedPlatforms') and len(txn.get('connectedPlatforms')) > 0 else False
+        synced_to_erp = (
+            True
+            if txn.get("connectedPlatforms") and len(txn.get("connectedPlatforms")) > 0
+            else False
+        )
         result += add_line("Synced to ERP", synced_to_erp)
-        
+
         # Optionally add a blank line or separator between transactions
         result += "\n"
 
     if current_page < total_pages:
-        result += f"\nThere are more transactions available. Use page parameter to view next page."
+        result += "\nThere are more transactions available. Use page parameter to view next page."
 
     return result
 
@@ -188,7 +192,7 @@ def format_transaction_details(response: Dict) -> str:
     if not txn:
         return "Transaction not found."
 
-    amount = txn.get('clearingBillingAmountCents', txn.get('authBillingAmountCents', 0))
+    amount = txn.get("clearingBillingAmountCents", txn.get("authBillingAmountCents", 0))
     return (
         f"Transaction Details:\n\n"
         f"ID: {txn['id']}\n"
