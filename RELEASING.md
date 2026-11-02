@@ -25,13 +25,17 @@ environment.
    GitHub release. Never reuse a published version or move its tag.
 4. After source tests, installed-wheel import checks and runtime advisory checks pass,
    an authorized reviewer approves the `pypi` deployment in the Actions run.
-   GitHub publishes the validated artifacts through OIDC, then creates the version
-   tag and GitHub release at the merged commit using the changelog as release notes.
+   The workflow reserves the version tag at the merged commit before uploading,
+   verifies any existing PyPI files match the approved artifacts, and publishes
+   through OIDC. It verifies the complete file set before creating the GitHub release.
 5. Confirm both distributions exist on PyPI and a fresh installation reports the
-   expected version. For a failed run, use **Re-run failed jobs**. Publication skips
-   existing files so a partial upload or GitHub release failure can be recovered
-   without replacing published files. **Run workflow** on `main` remains available
-   for recovery; no tag input or manual tag creation is needed.
+   expected version. For a failed run, use **Re-run failed jobs** on the original
+   run: it reuses that run's commit and built distributions. Never move the version
+   tag or delete it to retry publication. A new run at a later commit with the same
+   version is rejected, even if a GitHub release has not yet been created.
+   Manual dispatch is only suitable while `main` still points to the original
+   commit; rebuilt files must match any existing PyPI file hashes. If they differ,
+   recover using the original run's artifacts, or prepare a new package version.
 6. Merge release-only metadata changes back into `development` when necessary.
 
 Publish SDK 3.0.0 before toolkit 2.0.0, which requires `paywithextend==3.0.0`.
