@@ -357,3 +357,50 @@ async def test_invalid_poll_interval_rejected_before_upload(interval):
     with pytest.raises(ValueError):
         await upload_and_automatch(api, "synthetic.png", interval=interval)
     api.execute.assert_not_awaited()
+
+
+@pytest.mark.parametrize("failed_step", ["create_automatch", "poll_status"])
+async def test_receipt_flow_retains_completed_step_ids_and_cause(failed_step):
+    from extend_ai_toolkit.workflows import ReceiptWorkflowError
+
+    cause = ExtendTransportError("synthetic transport failure")
+    responses = [{"id": "ra_recover", "urls": {"original": "sensitive-url"}}]
+    if failed_step == "poll_status":
+        responses.append({"id": "job_recover"})
+    execute = AsyncMock(side_effect=[*responses, cause])
+    with pytest.raises(ReceiptWorkflowError) as raised:
+        await upload_and_automatch(SimpleNamespace(execute=execute), "synthetic.pdf")
+    error = raised.value
+    assert error.receipt_id == "ra_recover"
+    assert error.job_id == ("job_recover" if failed_step == "poll_status" else None)
+    assert error.failed_step == failed_step
+    assert error.__cause__ is cause
+    assert "sensitive-url" not in str(error)
+    assert execute.await_count == len(responses) + 1
+    if error.job_id:
+        execute.side_effect = None
+        execute.return_value = {"id": error.job_id, "tasks": [{"status": "SUCCESS"}]}
+        await execute("get_automatch_status", {"job_id": error.job_id})
+        assert [call.args[0] for call in execute.await_args_list].count("create_receipt_attachment") == 1
+        assert [call.args[0] for call in execute.await_args_list].count("automatch_receipts") == 1
+
+
+@pytest.mark.parametrize("failed_step", ["create_automatch", "poll_status"])
+async def test_receipt_cancellation_retains_ids_and_cancellation_semantics(failed_step):
+    import asyncio
+
+    from extend_ai_toolkit.workflows import ReceiptWorkflowCancelled
+
+    cause = asyncio.CancelledError()
+    responses = [{"id": "ra_recover"}]
+    if failed_step == "poll_status":
+        responses.append({"id": "job_recover"})
+    execute = AsyncMock(side_effect=[*responses, cause])
+    with pytest.raises(asyncio.CancelledError) as raised:
+        await upload_and_automatch(SimpleNamespace(execute=execute), "synthetic.pdf")
+    assert isinstance(raised.value, ReceiptWorkflowCancelled)
+    assert raised.value.receipt_id == "ra_recover"
+    assert raised.value.job_id == ("job_recover" if failed_step == "poll_status" else None)
+    assert raised.value.failed_step == failed_step
+    assert raised.value.__cause__ is cause
+    assert execute.await_count == len(responses) + 1

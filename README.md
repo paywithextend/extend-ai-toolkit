@@ -83,6 +83,17 @@ Receipt uploads reject symlinks, hard links, nonregular files, mismatched signat
 
 `workflows.upload_and_automatch(api, file_path, max_polls=20)` uploads once, starts one approved job, then polls reads. It returns complete, partial/failed, pending or unknown status with receipt/job identifiers. A pending or uncertain write must be reconciled; the workflow never replays uploads or jobs automatically.
 
+Failures after upload raise `workflows.ReceiptWorkflowError` with `receipt_id`,
+`job_id` (if received), and `failed_step`; `__cause__` retains the original error.
+If `job_id` is available, resume with `api.execute("get_automatch_status", {"job_id":
+error.job_id})` rather than calling the upload helper again. If job creation failed
+without returning an ID, reconcile the receipt and possible job before resubmitting.
+Upload failures propagate unchanged because no completed-step ID is available.
+Cancellation raises `ReceiptWorkflowCancelled`, an `asyncio.CancelledError` subclass
+with the same identifiers; record recovery state and re-raise cancellation. Store
+recovery identifiers securely if they must survive a process restart.
+
+
 ## Optional adapters
 
 Create `ExtendOpenAIToolkit` or `ExtendLangChainToolkit` from `ExtendAPI(client, policy=...)` and register its `get_tools()` with your host. Close the shared API client with `async with` or `aclose()`. LangChain tools use asynchronous `ainvoke`; synchronous invocation is unsupported because it creates incompatible event loops around pooled clients.
