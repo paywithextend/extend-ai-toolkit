@@ -58,8 +58,8 @@ truststore==0.10.5
 typing-inspection==0.4.4
 typing_extensions==4.16.0
 urllib3==2.8.0
-uuid_utils==0.19.0
+uuid_utils==1.2.0
 uvicorn==0.54.0
-websockets==16.1.1
+websockets==17.3
 xxhash==4.0.2
 zstandard==0.25.0
