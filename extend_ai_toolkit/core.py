@@ -157,4 +157,9 @@ def _schema_for(tool: Tool) -> dict[str, Any]:
 
 
 def _validate_arguments(tool: Tool, arguments: Mapping[str, Any]) -> dict[str, Any]:
-    return tool.args_schema.model_validate(arguments).model_dump(exclude_none=True)
+    model = tool.args_schema.model_validate(arguments)
+    result = model.model_dump(exclude_none=True)
+    if tool.name == "update_transaction_expense_data":
+        # Explicit null label IDs are write intent and must survive approval and dispatch.
+        result["data"] = model.data.model_dump(exclude_unset=True)
+    return result

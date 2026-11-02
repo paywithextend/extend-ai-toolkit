@@ -1,35 +1,6 @@
-import inspect
-import logging
-from typing import Any, Dict, List, Optional, Sequence, Union
+from typing import Dict, List, Optional
 
 from extend import ExtendClient
-
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-
-
-def _clean_params(params: Dict[str, Any]) -> Dict[str, Any]:
-    return {key: value for key, value in params.items() if value is not None}
-
-
-def _api_client_for(extend: ExtendClient) -> Any:
-    api_client = getattr(extend, "api_client", None)
-    if api_client is None:
-        raise AttributeError("Extend client does not expose a raw API client")
-    return api_client
-
-
-async def _raw_get(
-    extend: ExtendClient,
-    path: str,
-    params: Optional[Dict[str, Any]] = None,
-) -> Dict:
-    return await _api_client_for(extend).get(path, _clean_params(params or {}))
-
-
-# =========================
-# Virtual Card Functions
-# =========================
 
 
 async def get_virtual_cards(
@@ -53,291 +24,91 @@ async def get_virtual_cards(
         sort_field (Optional[str]): Field to sort by "createdAt", "updatedAt", "balanceCents", "displayName", "type", or "status"
         sort_direction (Optional[str]): Direction to sort (ASC or DESC)
     """
-    try:
-        response = await extend.virtual_cards.get_virtual_cards(
-            page=page,
-            per_page=per_page,
-            status=status.upper() if status else None,
-            recipient=recipient,
-            search_term=search_term,
-            sort_field=sort_field,
-            sort_direction=sort_direction,
-        )
-        return response
-
-    except Exception as e:
-        raise Exception("Error getting virtual cards") from e
+    response = await extend.virtual_cards.get_virtual_cards(
+        page=page,
+        per_page=per_page,
+        status=status.upper() if status else None,
+        recipient=recipient,
+        search_term=search_term,
+        sort_field=sort_field,
+        sort_direction=sort_direction,
+    )
+    return response
 
 
 async def get_virtual_card_detail(extend: ExtendClient, virtual_card_id: str) -> Dict:
     """Get details of a specific virtual card"""
-    try:
-        response = await extend.virtual_cards.get_virtual_card_detail(virtual_card_id)
-        return response
-
-    except Exception as e:
-        raise Exception("Extend request failed") from e
+    response = await extend.virtual_cards.get_virtual_card_detail(virtual_card_id)
+    return response
 
 
 async def close_virtual_card(extend: ExtendClient, virtual_card_id: str) -> Dict:
     """Close a specific virtual card"""
-    try:
-        response = await extend.virtual_cards.close_virtual_card(virtual_card_id)
-        return response
-
-    except Exception:
-        raise Exception("Error closing virtual card")
+    response = await extend.virtual_cards.close_virtual_card(virtual_card_id)
+    return response
 
 
 async def cancel_virtual_card(extend: ExtendClient, virtual_card_id: str) -> Dict:
     """Cancel a specific virtual card"""
-    try:
-        response = await extend.virtual_cards.cancel_virtual_card(virtual_card_id)
-        return response
-
-    except Exception:
-        raise Exception("Error canceling virtual card")
-
-
-# =========================
-# Transaction Functions
-# =========================
+    response = await extend.virtual_cards.cancel_virtual_card(virtual_card_id)
+    return response
 
 
 async def get_transactions(
-    extend: ExtendClient,
-    page: int = 1,
-    per_page: int = 50,
-    from_date: Optional[str] = None,
-    to_date: Optional[str] = None,
-    status: Optional[str] = None,
-    statuses: Optional[Sequence[str]] = None,
-    receipt_statuses: Optional[Sequence[str]] = None,
-    expense_category_statuses: Optional[Sequence[str]] = None,
-    missing_expense_categories: Optional[bool] = None,
-    virtual_card_id: Optional[str] = None,
-    min_amount_cents: Optional[int] = None,
-    max_amount_cents: Optional[int] = None,
-    receipt_missing: Optional[bool] = None,
-    search_term: Optional[str] = None,
-    sort_field: Optional[str] = None,
+    extend: ExtendClient, page: int = 1, per_page: int = 50, **filters
 ) -> Dict:
-    """
-    Get a list of recent transactions
-
-    Args:
-        page (int): One-based pagination page number. Defaults to 1.
-        per_page (int): number of transactions per page,
-        from_date (Optional[str]): Start date (YYYY-MM-DD)
-        to_date (Optional[str]): End date (YYYY-MM-DD)
-        status (Optional[str]): Filter transactions by status (e.g., "PENDING", "CLEARED", "DECLINED")
-        statuses (Optional[Sequence[str]]): Provide multiple status filters (2.0+)
-        receipt_statuses (Optional[Sequence[str]]): Filter by receipt statuses when supported
-        expense_category_statuses (Optional[Sequence[str]]): Filter by expense category statuses when supported
-        missing_expense_categories (Optional[bool]): Filter transactions missing expense categorizations (2.0+)
-        virtual_card_id (Optional[str]): Filter by specific virtual card
-        min_amount_cents (Optional[int]): Minimum amount in cents
-        max_amount_cents (Optional[int]): Maximum amount in cents
-        receipt_missing (Optional[bool]): Filter transactions by whether they are missing a receipt
-        search_term (Optional[str]): Filter transactions by search term (e.g., "Subscription")
-        sort_field (Optional[str]): Field to sort by, with optional direction
-                                    Use "recipientName", "merchantName", "amount", "date" for ASC
-                                    Use "-recipientName", "-merchantName", "-amount", "-date" for DESC
-
-    """
-    try:
-        transaction_method = extend.transactions.get_transactions
-        parameters = inspect.signature(transaction_method).parameters
-
-        def _normalize(values: Optional[Union[Sequence[str], str]]) -> Optional[List[str]]:
-            if values is None:
-                return None
-            if isinstance(values, str):
-                iterable = [values]
-            else:
-                iterable = list(values)
-
-            normalized = [value.upper() for value in iterable if value]
-            return normalized or None
-
-        normalized_statuses = _normalize(statuses)
-        if normalized_statuses is None:
-            normalized_statuses = _normalize(status)
-
-        normalized_receipt_statuses = _normalize(receipt_statuses)
-        normalized_expense_category_statuses = _normalize(expense_category_statuses)
-
-        call_kwargs: Dict[str, Any] = {
-            "page": page,
-            "per_page": per_page,
-            "from_date": from_date,
-            "to_date": to_date,
-            "virtual_card_id": virtual_card_id,
-            "min_amount_cents": min_amount_cents,
-            "max_amount_cents": max_amount_cents,
-            "search_term": search_term,
-            "sort_field": sort_field,
-        }
-
-        if normalized_statuses:
-            if "statuses" in parameters:
-                call_kwargs["statuses"] = normalized_statuses
-            elif "status" in parameters:
-                if len(normalized_statuses) > 1:
-                    raise ValueError(
-                        "Multiple statuses require paywithextend>=2.0.0. Current version only supports a single status parameter."
-                    )
-                call_kwargs["status"] = normalized_statuses[0]
-
-        if normalized_receipt_statuses and "receipt_statuses" in parameters:
-            call_kwargs["receipt_statuses"] = normalized_receipt_statuses
-
-        if normalized_expense_category_statuses and "expense_category_statuses" in parameters:
-            call_kwargs["expense_category_statuses"] = normalized_expense_category_statuses
-
-        if missing_expense_categories is not None and "missing_expense_categories" in parameters:
-            call_kwargs["missing_expense_categories"] = missing_expense_categories
-
-        if receipt_missing is not None and "receipt_missing" in parameters:
-            call_kwargs["receipt_missing"] = receipt_missing
-
-        supported_param_names = set(parameters.keys())
-        filtered_kwargs = {
-            key: value
-            for key, value in call_kwargs.items()
-            if key in supported_param_names and value is not None
-        }
-
-        response = await transaction_method(**filtered_kwargs)
-        return response
-
-    except Exception:
-        raise Exception("Error getting transactions")
+    """Get one report page. Full-page totals are sentinel values, not exact counts."""
+    response = await extend.transactions.get_transactions(page=page, per_page=per_page, **filters)
+    report = response.get("report", {})
+    rows = report.get("transactions", [])
+    actual_page = report.get("page", page)
+    actual_size = report.get("perPage", per_page)
+    full = len(rows) >= actual_size
+    return {
+        **response,
+        "paginationInfo": {
+            "page": actual_page,
+            "perPage": actual_size,
+            "countExact": not full and (actual_page == 1 or bool(rows)),
+            "mayHaveMore": full,
+            "nextPage": actual_page + 1 if full else None,
+        },
+    }
 
 
-async def count_transactions(
-    extend: ExtendClient,
-    from_date: Optional[str] = None,
-    to_date: Optional[str] = None,
-    status: Optional[Sequence[str]] = None,
-    virtual_card_id: Optional[str] = None,
-    min_amount_cents: Optional[int] = None,
-    max_amount_cents: Optional[int] = None,
-    search_term: Optional[str] = None,
-    expense_category_statuses: Optional[Sequence[str]] = None,
-) -> Dict:
-    """Count transactions matching report filters."""
-    try:
-        count_method = getattr(extend.transactions, "count_transactions", None)
-        normalized_statuses = [value.upper() for value in status] if status else None
-        normalized_expense_statuses = (
-            [value.upper()[0] + value.lower()[1:] for value in expense_category_statuses]
-            if expense_category_statuses
-            else None
-        )
-        if count_method is not None:
-            return await count_method(
-                from_date=from_date,
-                to_date=to_date,
-                status=normalized_statuses,
-                virtual_card_id=virtual_card_id,
-                min_amount_cents=min_amount_cents,
-                max_amount_cents=max_amount_cents,
-                search_term=search_term,
-                expense_category_statuses=normalized_expense_statuses,
-            )
-
-        return await _raw_get(
-            extend,
-            "/reports/transactions/count",
-            {
-                "since": from_date,
-                "until": to_date,
-                "statuses": normalized_statuses,
-                "virtualCardId": virtual_card_id,
-                "minClearingBillingCents": min_amount_cents,
-                "maxClearingBillingCents": max_amount_cents,
-                "search": search_term,
-                "expenseCategoryStatuses": normalized_expense_statuses,
-                "dateType": "Transaction",
-            },
-        )
-    except Exception:
-        raise Exception("Error counting transactions")
+async def count_transactions(extend: ExtendClient, **filters) -> Dict:
+    """Request an exact count explicitly, using the same filters as report listing."""
+    return await extend.transactions.count_transactions(**filters)
 
 
 async def get_transaction_detail(extend: ExtendClient, transaction_id: str) -> Dict:
     """Get a transaction detail"""
-    try:
-        response = await extend.transactions.get_transaction(transaction_id)
-        return response
-
-    except Exception:
-        raise Exception("Error getting transaction detail")
-
-
-# =========================
-# Credit Card Functions
-# =========================
+    response = await extend.transactions.get_transaction(transaction_id)
+    return response
 
 
 async def get_credit_cards(
     extend: ExtendClient,
     page: int = 0,
     per_page: int = 10,
-    status: Optional[str] = None,
-    type: Optional[str] = None,
-    search_term: Optional[str] = None,
-    sort_direction: Optional[str] = None,
+    status: str | None = None,
+    type: str | None = None,
+    search_term: str | None = None,
+    sort_direction: str | None = None,
 ) -> Dict:
-    """Get a list of credit cards"""
-    try:
-        credit_card_method = extend.credit_cards.get_credit_cards
-        parameters = inspect.signature(credit_card_method).parameters
-        if type is not None and "type" not in parameters:
-            return await _raw_get(
-                extend,
-                "/creditcards",
-                {
-                    "page": page,
-                    "count": per_page,
-                    "statuses": status.upper() if status else None,
-                    "types": type.upper(),
-                    "search": search_term,
-                    "sortDirection": sort_direction,
-                },
-            )
-
-        call_kwargs = {
-            "page": page,
-            "per_page": per_page,
-            "status": status.upper() if status else None,
-            "type": type.upper() if type else None,
-            "search_term": search_term,
-            "sort_direction": sort_direction,
-        }
-        response = await credit_card_method(
-            **{key: value for key, value in call_kwargs.items() if key in parameters}
-        )
-        return response
-
-    except Exception:
-        raise Exception("Error getting credit cards")
+    """List credit cards with the backend's singular type parameter."""
+    return await extend.credit_cards.get_credit_cards(
+        page=page,
+        per_page=per_page,
+        status=status,
+        type=type,
+        search_term=search_term,
+        sort_direction=sort_direction,
+    )
 
 
 async def get_credit_card_detail(extend: ExtendClient, credit_card_id: str) -> Dict:
-    """Get details of a specific credit card"""
-    try:
-        response = await extend.virtual_cards.get_credit_card_detail(credit_card_id)
-        return response
-
-    except Exception as e:
-        raise Exception("Extend request failed") from e
-
-
-# =========================
-# Expense Data Functions
-# =========================
+    return await extend.credit_cards.get_credit_card_detail(credit_card_id)
 
 
 async def get_expense_categories(
@@ -347,34 +118,32 @@ async def get_expense_categories(
     search: Optional[str] = None,
     sort_field: Optional[str] = None,
     sort_direction: Optional[str] = None,
+    transaction_id: Optional[str] = None,
+    required_for_transactions: Optional[bool] = None,
+    required_for_virtual_cards: Optional[bool] = None,
 ) -> Dict:
     """
     Get a list of expense categories.
     """
-    try:
-        response = await extend.expense_data.get_expense_categories(
-            active=active,
-            required=required,
-            search=search,
-            sort_field=sort_field,
-            sort_direction=sort_direction,
-        )
-        return response
-
-    except Exception as e:
-        raise Exception("Error getting expense categories") from e
+    response = await extend.expense_data.get_expense_categories(
+        active=active,
+        required=required,
+        search=search,
+        sort_field=sort_field,
+        sort_direction=sort_direction,
+        transaction_id=transaction_id,
+        required_for_transactions=required_for_transactions,
+        required_for_virtual_cards=required_for_virtual_cards,
+    )
+    return response
 
 
 async def get_expense_category(extend: ExtendClient, category_id: str) -> Dict:
     """
     Get detailed information about a specific expense category.
     """
-    try:
-        response = await extend.expense_data.get_expense_category(category_id)
-        return response
-
-    except Exception as e:
-        raise Exception("Error getting expense category") from e
+    response = await extend.expense_data.get_expense_category(category_id)
+    return response
 
 
 async def get_expense_category_labels(
@@ -390,38 +159,20 @@ async def get_expense_category_labels(
     """
     Get a paginated list of expense category labels.
     """
-    try:
-        response = await extend.expense_data.get_expense_category_labels(
-            category_id=category_id,
-            page=page,
-            per_page=per_page,
-            active=active,
-            search=search,
-            sort_field=sort_field,
-            sort_direction=sort_direction,
-        )
-        return response
-
-    except Exception as e:
-        raise Exception("Error getting expense category labels") from e
+    response = await extend.expense_data.get_expense_category_labels(
+        category_id=category_id,
+        page=page,
+        per_page=per_page,
+        active=active,
+        search=search,
+        sort_field=sort_field,
+        sort_direction=sort_direction,
+    )
+    return response
 
 
-async def get_expense_category_label(
-    extend: ExtendClient,
-    category_id: str,
-    label_id: str,
-) -> Dict:
-    """Get detailed information about a specific expense category label."""
-    try:
-        label_method = getattr(extend.expense_data, "get_expense_category_label", None)
-        if label_method is not None:
-            return await label_method(category_id=category_id, label_id=label_id)
-        return await _raw_get(
-            extend,
-            f"/expensedata/categories/{category_id}/labels/{label_id}",
-        )
-    except Exception as e:
-        raise Exception("Error getting expense category label") from e
+async def get_expense_category_label(extend: ExtendClient, category_id: str, label_id: str) -> Dict:
+    return await extend.expense_data.get_expense_category_label(category_id, label_id)
 
 
 async def create_expense_category(
@@ -431,22 +182,22 @@ async def create_expense_category(
     required: bool,
     active: Optional[bool] = None,
     free_text_allowed: Optional[bool] = None,
+    required_for_transactions: Optional[bool] = None,
+    required_for_virtual_cards: Optional[bool] = None,
 ) -> Dict:
     """
     Create an expense category.
     """
-    try:
-        response = await extend.expense_data.create_expense_category(
-            name=name,
-            code=code,
-            required=required,
-            active=active,
-            free_text_allowed=free_text_allowed,
-        )
-        return response
-
-    except Exception as e:
-        raise Exception("Error creating expense category") from e
+    response = await extend.expense_data.create_expense_category(
+        name=name,
+        code=code,
+        required=required,
+        active=active,
+        free_text_allowed=free_text_allowed,
+        required_for_transactions=required_for_transactions,
+        required_for_virtual_cards=required_for_virtual_cards,
+    )
+    return response
 
 
 async def create_expense_category_label(
@@ -455,14 +206,10 @@ async def create_expense_category_label(
     """
     Create an expense category label.
     """
-    try:
-        response = await extend.expense_data.create_expense_category_label(
-            category_id=category_id, name=name, code=code, active=active
-        )
-        return response
-
-    except Exception as e:
-        raise Exception("Error creating expense category label") from e
+    response = await extend.expense_data.create_expense_category_label(
+        category_id=category_id, name=name, code=code, active=active
+    )
+    return response
 
 
 async def update_expense_category(
@@ -472,22 +219,22 @@ async def update_expense_category(
     active: Optional[bool] = None,
     required: Optional[bool] = None,
     free_text_allowed: Optional[bool] = None,
+    required_for_transactions: Optional[bool] = None,
+    required_for_virtual_cards: Optional[bool] = None,
 ) -> Dict:
     """
     Update an expense category.
     """
-    try:
-        response = await extend.expense_data.update_expense_category(
-            category_id=category_id,
-            name=name,
-            active=active,
-            required=required,
-            free_text_allowed=free_text_allowed,
-        )
-        return response
-
-    except Exception as e:
-        raise Exception("Error updating expense category") from e
+    response = await extend.expense_data.update_expense_category(
+        category_id=category_id,
+        name=name,
+        active=active,
+        required=required,
+        free_text_allowed=free_text_allowed,
+        required_for_transactions=required_for_transactions,
+        required_for_virtual_cards=required_for_virtual_cards,
+    )
+    return response
 
 
 async def update_expense_category_label(
@@ -500,17 +247,10 @@ async def update_expense_category_label(
     """
     Update an expense category label.
     """
-    try:
-        response = await extend.expense_data.update_expense_category_label(
-            category_id=category_id,
-            label_id=label_id,
-            name=name,
-            active=active,
-        )
-        return response
-
-    except Exception as e:
-        raise Exception("Error updating expense category label") from e
+    response = await extend.expense_data.update_expense_category_label(
+        category_id=category_id, label_id=label_id, name=name, active=active
+    )
+    return response
 
 
 async def update_transaction_expense_data(
@@ -520,92 +260,40 @@ async def update_transaction_expense_data(
     return await extend.transactions.update_transaction_expense_data(transaction_id, data)
 
 
-# =========================
-# Organization And User Functions
-# =========================
-
-
 async def get_organizations(extend: ExtendClient) -> Dict:
-    """Get organizations available to the current user."""
-    try:
-        organizations = getattr(extend, "organizations", None)
-        if organizations is not None and hasattr(organizations, "list"):
-            return await organizations.list()
-        return await _raw_get(extend, "/organizations/")
-    except Exception:
-        raise Exception("Error getting organizations")
+    return await extend.organizations.get_organizations()
 
 
 async def get_organization_members(
     extend: ExtendClient,
     organization_id: str,
-    page: Optional[int] = None,
-    count: Optional[int] = None,
-    search: Optional[str] = None,
-    organization_role: Optional[str] = None,
-    organization_roles: Optional[List[str]] = None,
-    show_deactivated_users: Optional[bool] = True,
-    render_metrics: Optional[bool] = False,
+    page: int = 0,
+    count: int = 50,
+    search: str | None = None,
+    organization_role: str | None = None,
+    organization_roles: list[str] | None = None,
+    show_deactivated_users: bool = True,
+    render_metrics: bool = False,
 ) -> Dict:
-    """Get members for an organization."""
-    try:
-        organizations = getattr(extend, "organizations", None)
-        if organizations is not None and hasattr(organizations, "get_members"):
-            return await organizations.get_members(
-                organization_id=organization_id,
-                page=page,
-                count=count,
-                search=search,
-                organization_role=organization_role,
-                organization_roles=organization_roles,
-                show_deactivated_users=show_deactivated_users,
-                render_metrics=render_metrics,
-            )
-        return await _raw_get(
-            extend,
-            f"/organizations/{organization_id}/members",
-            {
-                "page": page,
-                "count": count,
-                "search": search,
-                "organizationRole": organization_role,
-                "organizationRoles": organization_roles,
-                "showDeactivatedUsers": show_deactivated_users,
-                "renderMetrics": render_metrics,
-            },
-        )
-    except Exception:
-        raise Exception("Error getting organization members")
+    return await extend.organizations.get_organization_members(
+        organization_id,
+        page=page,
+        count=count,
+        search=search,
+        organization_role=organization_role,
+        organization_roles=organization_roles,
+        show_deactivated_users=show_deactivated_users,
+        render_metrics=render_metrics,
+    )
 
 
 async def get_user_details(extend: ExtendClient, user_id: str) -> Dict:
-    """Get a user's profile details."""
-    try:
-        users = getattr(extend, "users", None)
-        if users is not None and hasattr(users, "get_user"):
-            return await users.get_user(user_id=user_id)
-        return await _raw_get(extend, f"/users/{user_id}")
-    except Exception:
-        raise Exception("Error getting user details")
+    return await extend.users.get_user_details(user_id)
 
 
 async def get_expense_policy(extend: ExtendClient, organization_id: str) -> Dict:
-    """Get raw expense policy text for an organization."""
-    try:
-        expense_policy = getattr(extend, "expense_policy", None)
-        if expense_policy is not None and hasattr(expense_policy, "get_expense_policy"):
-            return await expense_policy.get_expense_policy(organization_id=organization_id)
-        return await _raw_get(
-            extend,
-            f"/organizations/{organization_id}/expensepolicy/rawtext",
-        )
-    except Exception:
-        raise Exception("Error getting expense policy")
-
-
-# =========================
-# Receipt Attachment Functions
-# =========================
+    """Return policy file/compile metadata; signed URLs are not fetched."""
+    return await extend.organizations.get_expense_policy(organization_id)
 
 
 async def create_receipt_attachment(
@@ -615,15 +303,7 @@ async def create_receipt_attachment(
     raise PermissionError("Use execute_tool with a host receipt policy")
 
 
-# =========================
-# Receipt Capture Functions
-# =========================
-
-
-async def automatch_receipts(
-    extend: ExtendClient,
-    receipt_attachment_ids: List[str],
-) -> Dict:
+async def automatch_receipts(extend: ExtendClient, receipt_attachment_ids: List[str]) -> Dict:
     """
     Initiates an asynchronous bulk receipt automatch job.
 
@@ -637,19 +317,13 @@ async def automatch_receipts(
     Returns:
         Dict: A dictionary representing the Bulk Receipt Automatch Response.
     """
-    try:
-        response = await extend.receipt_capture.automatch_receipts(
-            receipt_attachment_ids=receipt_attachment_ids
-        )
-        return response
-    except Exception as e:
-        raise Exception("Error initiating receipt automatch") from e
+    response = await extend.receipt_capture.automatch_receipts(
+        receipt_attachment_ids=receipt_attachment_ids
+    )
+    return response
 
 
-async def get_automatch_status(
-    extend: ExtendClient,
-    job_id: str,
-) -> Dict:
+async def get_automatch_status(extend: ExtendClient, job_id: str) -> Dict:
     """
     Retrieves the status of a bulk receipt capture automatch job.
 
@@ -659,17 +333,11 @@ async def get_automatch_status(
     Returns:
         Dict: A dictionary representing the current Bulk Receipt Automatch Response.
     """
-    try:
-        response = await extend.receipt_capture.get_automatch_status(job_id=job_id)
-        return response
-    except Exception as e:
-        raise Exception("Error getting automatch status") from e
+    response = await extend.receipt_capture.get_automatch_status(job_id=job_id)
+    return response
 
 
-async def send_receipt_reminder(
-    extend: ExtendClient,
-    transaction_id: str,
-) -> Dict:
+async def send_receipt_reminder(extend: ExtendClient, transaction_id: str) -> Dict:
     """
     Send a transaction-specific receipt reminder.
 
@@ -680,8 +348,5 @@ async def send_receipt_reminder(
     Returns:
         Dict: Response from the API indicating the reminder was sent successfully.
     """
-    try:
-        response = await extend.transactions.send_receipt_reminder(transaction_id)
-        return response
-    except Exception as e:
-        raise Exception("Error sending receipt reminder") from e
+    response = await extend.transactions.send_receipt_reminder(transaction_id)
+    return response

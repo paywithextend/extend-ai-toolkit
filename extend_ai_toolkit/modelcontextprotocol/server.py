@@ -3,14 +3,12 @@
 import json
 from contextlib import asynccontextmanager
 
-from extend.client import ExtendAPIError, ExtendTransportError
 from mcp.server import MCPServer
 from mcp.types import CallToolResult, TextContent, ToolAnnotations
 from mcp.types import Tool as MCPTool
-from pydantic import ValidationError
 
 from ..__version__ import __version__
-from ..policy import ToolPermissionError
+from ..errors import error_payload
 from ..shared.api import ExtendAPI
 from ..shared.tools import tools
 
@@ -51,16 +49,16 @@ class ExtendMCPServer(MCPServer):
         # Validate the original JSON before any framework coercion or defaulting.
         try:
             result = await self.api.execute(name, arguments)
-        except (ValidationError, ValueError):
-            return CallToolResult(is_error=True, content=[TextContent(type="text", text="Invalid tool arguments")])
-        except ToolPermissionError:
-            return CallToolResult(is_error=True, content=[TextContent(type="text", text="Host policy denied this invocation")])
-        except ExtendAPIError as exc:
-            return CallToolResult(is_error=True, content=[TextContent(type="text", text=f"Extend API returned HTTP {exc.response.status_code}")])
-        except ExtendTransportError:
-            return CallToolResult(is_error=True, content=[TextContent(type="text", text="Extend transport failed; reconcile write outcomes before retrying")])
-        except Exception:
-            return CallToolResult(is_error=True, content=[TextContent(type="text", text="Extend tool failed; consult the host without disclosing request data")])
+        except Exception as exc:
+            effect = next(
+                (tool.side_effect_class for tool in self._catalog if tool.name == name), "unknown"
+            )
+            error = error_payload(exc, mutation=effect != "read_only")
+            return CallToolResult(
+                is_error=True,
+                content=[TextContent(type="text", text=json.dumps(error))],
+                structured_content=error,
+            )
         return CallToolResult(
             content=[TextContent(type="text", text=json.dumps(result))],
             structured_content=result if isinstance(result, dict) else {"result": result},

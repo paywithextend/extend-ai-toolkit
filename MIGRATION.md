@@ -16,3 +16,10 @@ SDK PR 29 must merge and publish `paywithextend==3.0.0` before this package can 
 Do not publish toolkit 2.0 until the stacked API-contract/client work and sandbox smoke validation are complete. Release CI requires those contract/client test files. Publication is manual from a reviewed development tag and a previously tested wheel, through the protected `pypi` environment and Trusted Publishing. The repository owner must register the PyPI Trusted Publisher and environment protections before use; YAML alone does not perform that setup. No package has been published by this change.
 
 `constraints/adapters.txt` records a tested Python 3.11 adapter resolution; CI also resolves each supported extra fresh on Python 3.11–3.13 and checks active PyPI advisories. All active advisories fail the audit; no dependency advisory exceptions are configured.
+
+Transaction filters and endpoint requests now delegate to SDK resource methods.
+`date_type="Clear"` selects clearing-date bounds; `credit_card_id` filters by
+funding card. Expense categories accept `transaction_id` and separate required
+flags for transactions/cards. For expense-label updates, supply `labelId`
+explicitly: a string assigns it and `null` removes it. Null remains part of the
+host approval and the request body.

@@ -1,88 +1,48 @@
+"""Asynchronous langchain adapter read example; --fixture makes no network requests."""
+
+import argparse
 import asyncio
+import json
 import os
 
-from dotenv import load_dotenv
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
-from langchain_openai import ChatOpenAI
-from langgraph.prebuilt import create_react_agent
+import httpx
+from extend import ExtendClient
+from extend.auth import BasicAuth
 
-from extend_ai_toolkit.langchain.toolkit import ExtendLangChainToolkit
-from extend_ai_toolkit.shared import Actions, Configuration, Product, Scope
-
-# Load environment variables
-load_dotenv()
-
-# Get required environment variables
-api_key = os.environ.get("EXTEND_API_KEY")
-api_secret = os.environ.get("EXTEND_API_SECRET")
-
-# Validate environment variables
-if not all([api_key, api_secret]):
-    raise ValueError(
-        "Missing required environment variables. Please set EXTEND_API_KEY and  EXTEND_API_SECRET"
-    )
-
-llm = ChatOpenAI(
-    model="gpt-4o",
-)
-
-extend_langchain_toolkit = ExtendLangChainToolkit.default_instance(
-    api_key,
-    api_secret,
-    Configuration(
-        scope=[
-            Scope(Product.VIRTUAL_CARDS, actions=Actions(read=True, update=True)),
-            Scope(Product.CREDIT_CARDS, actions=Actions(read=True)),
-            Scope(Product.TRANSACTIONS, actions=Actions(read=True, update=True)),
-            Scope(Product.EXPENSE_CATEGORIES, actions=Actions(read=True)),
-            Scope(Product.RECEIPT_ATTACHMENTS, actions=Actions(read=True)),
-        ]
-    ),
-)
-
-tools = []
-tools.extend(extend_langchain_toolkit.get_tools())
-
-# Create the react agent
-langgraph_agent_executor = create_react_agent(llm, tools)
+from extend_ai_toolkit.langchain import ExtendLangChainToolkit
+from extend_ai_toolkit.shared import ExtendAPI
 
 
-async def chat_with_agent():
-    print("\nWelcome to the Extend AI Assistant!")
-    print("You can ask me to:")
-    print("- List all credit cards")
-    print("- List all virtual cards")
-    print("- Show details for a specific virtual card")
-    print("- Show transactions for a specific period")
-    print("- Show details for a specific transaction")
-    print("\nType 'exit' to end the conversation.\n")
-
-    while True:
-        # Get user input
-        user_input = input("\nYou: ").strip()
-
-        if user_input.lower() in ["exit", "quit", "bye"]:
-            print("\nGoodbye!")
-            break
-
-        # Process the query
-        result = await langgraph_agent_executor.ainvoke(
-            {
-                "input": user_input,
-                "messages": [
-                    SystemMessage(
-                        content="You are a helpful assistant that can interact with the Extend API to manage virtual cards, credit cards, and transactions."
-                    ),
-                    HumanMessage(content=user_input),
-                ],
-            }
+async def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--fixture", action="store_true")
+    parser.add_argument("--environment", choices=("stage", "prod"))
+    args = parser.parse_args()
+    if not args.fixture and args.environment is None:
+        parser.error("Choose --environment explicitly")
+    transport = (
+        httpx.MockTransport(
+            lambda request: httpx.Response(
+                200, json={"virtualCards": [], "pagination": {"page": 0}}
+            )
         )
-
-        # Extract and print the assistant's message
-        for message in result.get("messages", []):
-            if isinstance(message, AIMessage):
-                print("\nAssistant:", message.content)
+        if args.fixture
+        else None
+    )
+    async with httpx.AsyncClient(transport=transport, trust_env=False) as http:
+        async with ExtendClient(
+            auth=BasicAuth(
+                "synthetic" if args.fixture else os.environ["EXTEND_API_KEY"],
+                "synthetic" if args.fixture else os.environ["EXTEND_API_SECRET"],
+            ),
+            environment="stage" if args.fixture else args.environment,
+            http_client=http,
+        ) as sdk:
+            toolkit = ExtendLangChainToolkit(ExtendAPI(sdk))
+            tool = next(tool for tool in toolkit.get_tools() if tool.name == "get_virtual_cards")
+            result = await tool.ainvoke({})
+            print(json.dumps(json.loads(result), indent=2))
 
 
 if __name__ == "__main__":
-    asyncio.run(chat_with_agent())
+    asyncio.run(main())

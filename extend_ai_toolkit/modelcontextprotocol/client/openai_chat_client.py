@@ -1,44 +1,41 @@
-# openai_client.py
-import os
-from typing import Any, Dict, List, Optional, Tuple
+"""OpenAI chat tool-call messages with provider-issued call IDs."""
+
+import json
 
 from openai import AsyncOpenAI
 
-from extend_ai_toolkit.modelcontextprotocol.client import ChatClient
+from .chat_client import AssistantTurn, ChatClient, ToolCall
 
 
 class OpenAIChatClient(ChatClient):
-    """Implementation of ChatClient for OpenAI's API"""
-
-    def __init__(self, model_name="gpt-4o"):
+    def __init__(self, model_name="gpt-4.1", *, client=None):
         self.model_name = model_name
-        self.client = AsyncOpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+        self.client = client if client is not None else AsyncOpenAI()
+        self._owns_client = client is None
 
-    async def generate_completion(
-        self, messages: List[Dict[str, Any]], functions: List[Dict[str, Any]], max_tokens: int
-    ) -> Tuple[Optional[str], Optional[Dict]]:
+    async def complete(self, messages, tools, max_tokens):
         response = await self.client.chat.completions.create(
-            model=self.model_name, max_tokens=max_tokens, messages=messages, functions=functions
-        )
-
-        choice = response.choices[0]
-
-        # Check if the assistant wants to call a function
-        if choice.finish_reason == "function_call":
-            func_call = choice.message.function_call
-            function_call_info = {"name": func_call.name, "arguments": func_call.arguments}
-            return None, function_call_info
-        else:
-            # No function call; return the assistant's message directly
-            return choice.message.content, None
-
-    async def generate_with_tool_result(
-        self, messages: List[Dict[str, Any]], max_tokens: int
-    ) -> str:
-        follow_up = await self.client.chat.completions.create(
             model=self.model_name,
-            max_tokens=max_tokens,
             messages=messages,
+            tools=[{"type": "function", "function": tool} for tool in tools],
+            max_completion_tokens=max_tokens,
+            store=False,
         )
+        message = response.choices[0].message
+        calls = tuple(
+            ToolCall(call.id, call.function.name, json.loads(call.function.arguments))
+            for call in (message.tool_calls or [])
+        )
+        if any(not isinstance(call.arguments, dict) for call in calls):
+            raise ValueError("Tool arguments must be JSON objects")
+        return AssistantTurn(message.model_dump(exclude_none=True), calls, message.content or "")
 
-        return follow_up.choices[0].message.content
+    def result_messages(self, results):
+        return [
+            {"role": "tool", "tool_call_id": call.id, "content": content}
+            for call, content, failed in results
+        ]
+
+    async def aclose(self):
+        if self._owns_client:
+            await self.client.close()
