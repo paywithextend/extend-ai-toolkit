@@ -1,19 +1,15 @@
-VENV_NAME ?= venv
-PIP ?= pip
-PYTHON ?= python3.12
-ENV ?= stage
+PYTHON ?= python
+FOCUSED_TESTS = extend_ai_toolkit/tests/test_security.py extend_ai_toolkit/tests/test_adapter_security.py extend_ai_toolkit/tests/test_core.py extend_ai_toolkit/tests/test_configuration.py extend_ai_toolkit/tests/test_validate_tool_spec.py extend_ai_toolkit/tests/test_packaging.py extend_ai_toolkit/tests/test_contracts.py extend_ai_toolkit/tests/test_client_workflows.py extend_ai_toolkit/tests/test_review_regressions.py extend_ai_toolkit/tests/test_release_files.py
 
-venv: $(VENV_NAME)/bin/activate
+lint:
+	$(PYTHON) -m ruff check extend_ai_toolkit tools --exclude 'extend_ai_toolkit/tests/test_*'
+	$(PYTHON) -m ruff check $(FOCUSED_TESTS)
 
-$(VENV_NAME)/bin/activate: pyproject.toml
-	@test -d $(VENV_NAME) || $(PYTHON) -m venv $(VENV_NAME)
-	$(VENV_NAME)/bin/python -m pip install -e ".[dev]"
-	@touch $(VENV_NAME)/bin/activate
+test:
+	$(PYTHON) -m pytest -q $(FOCUSED_TESTS)
 
-test: venv
-	$(VENV_NAME)/bin/pytest tests
+build:
+	$(PYTHON) -m build
 
-build: venv
-	cp LICENSE LICENSE.bak
-	$(VENV_NAME)/bin/python -m build
-	rm LICENSE.bak
+docs:
+	$(PYTHON) tools/generate_capabilities.py

@@ -1,50 +1,45 @@
+"""Shared adapter registration and lifecycle."""
+
 from abc import abstractmethod
-from typing import List, Generic
-
-from pydantic import PrivateAttr
-
-from .auth import Authorization
+from typing import Generic
 
 from .api import ExtendAPI
 from .configuration import Configuration
-from .enums import Agent
 from .interfaces import ToolType
 from .tools import Tool, tools
 
 
 class AgentToolkit(Generic[ToolType]):
-    _tools: List[ToolType] = PrivateAttr(default=[])
-    agent: Agent
-
-    def __init__(
-            self,
-            extend_api: ExtendAPI,
-            configuration: Configuration,
-    ):
-        super().__init__()
-
+    def __init__(self, extend_api: ExtendAPI, configuration: Configuration | None = None):
+        self.api = (
+            extend_api.restricted_to(configuration) if configuration is not None else extend_api
+        )
         self._tools = [
-            self.tool_for_agent(extend_api, tool)
-            for tool in configuration.allowed_tools(tools)
+            self.tool_for_agent(self.api, tool)
+            for tool in tools
+            if tool.name in self.api.policy.allowed_tools
         ]
 
     @classmethod
-    def from_auth(cls, auth: Authorization, configuration: Configuration) -> "AgentToolkit":
-        return cls(
-            extend_api=ExtendAPI.from_auth(auth),
-            configuration=configuration
-        )
+    def from_auth(cls, auth, configuration=None, **host_options):
+        return cls(ExtendAPI.from_auth(auth, **host_options), configuration)
 
     @classmethod
-    def default_instance(cls, api_key: str, api_secret: str, configuration: Configuration) -> "AgentToolkit":
-        return cls(
-            extend_api=ExtendAPI.default_instance(api_key, api_secret),
-            configuration=configuration
-        )
-    
+    def default_instance(cls, api_key, api_secret, configuration=None, **host_options):
+        return cls(ExtendAPI.default_instance(api_key, api_secret, **host_options), configuration)
+
     @abstractmethod
     def tool_for_agent(self, api: ExtendAPI, tool: Tool) -> ToolType:
-        raise NotImplementedError("Subclasses must implement tool_for_agent()")
+        raise NotImplementedError
 
-    def get_tools(self) -> List[ToolType]:
-        return self._tools
+    def get_tools(self) -> list[ToolType]:
+        return list(self._tools)
+
+    async def aclose(self):
+        await self.api.aclose()
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *exc_info):
+        await self.aclose()

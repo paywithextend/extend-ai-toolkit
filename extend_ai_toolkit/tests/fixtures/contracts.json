@@ -1,0 +1,318 @@
+[
+  {
+    "name": "get_virtual_cards",
+    "arguments": {},
+    "method": "GET",
+    "path": "/virtualcards",
+    "query": {
+      "page": "0",
+      "count": "10"
+    },
+    "body": null
+  },
+  {
+    "name": "get_virtual_card_detail",
+    "arguments": {
+      "virtual_card_id": "vc_1"
+    },
+    "method": "GET",
+    "path": "/virtualcards/vc_1",
+    "query": {},
+    "body": null
+  },
+  {
+    "name": "cancel_virtual_card",
+    "arguments": {
+      "virtual_card_id": "vc_1"
+    },
+    "method": "PUT",
+    "path": "/virtualcards/vc_1/cancel",
+    "query": {},
+    "body": null
+  },
+  {
+    "name": "close_virtual_card",
+    "arguments": {
+      "virtual_card_id": "vc_1"
+    },
+    "method": "PUT",
+    "path": "/virtualcards/vc_1/close",
+    "query": {},
+    "body": null
+  },
+  {
+    "name": "get_credit_cards",
+    "arguments": {
+      "type": "SOURCE"
+    },
+    "method": "GET",
+    "path": "/creditcards",
+    "query": {
+      "page": "0",
+      "count": "10",
+      "type": "SOURCE"
+    },
+    "body": null
+  },
+  {
+    "name": "get_credit_card_detail",
+    "arguments": {
+      "credit_card_id": "cc_1"
+    },
+    "method": "GET",
+    "path": "/creditcards/cc_1",
+    "query": {},
+    "body": null
+  },
+  {
+    "name": "get_transactions",
+    "arguments": {},
+    "method": "GET",
+    "path": "/reports/transactions/v2",
+    "query": {
+      "page": "1",
+      "perPage": "50",
+      "dateType": "Transaction"
+    },
+    "body": null
+  },
+  {
+    "name": "count_transactions",
+    "arguments": {},
+    "method": "GET",
+    "path": "/reports/transactions/count",
+    "query": {
+      "dateType": "Transaction"
+    },
+    "body": null
+  },
+  {
+    "name": "get_transaction_detail",
+    "arguments": {
+      "transaction_id": "t_1"
+    },
+    "method": "GET",
+    "path": "/transactions/t_1",
+    "query": {},
+    "body": null
+  },
+  {
+    "name": "update_transaction_expense_data",
+    "arguments": {
+      "transaction_id": "t_1",
+      "data": {
+        "expenseDetails": [
+          {
+            "categoryId": "ec_1",
+            "labelId": "ecl_1"
+          }
+        ]
+      }
+    },
+    "method": "PATCH",
+    "path": "/transactions/t_1/expensedata",
+    "query": {},
+    "body": {
+      "expenseDetails": [
+        {
+          "categoryId": "ec_1",
+          "labelId": "ecl_1"
+        }
+      ]
+    }
+  },
+  {
+    "name": "get_expense_categories",
+    "arguments": {
+      "active": false
+    },
+    "method": "GET",
+    "path": "/expensedata/categories",
+    "query": {
+      "active": "false"
+    },
+    "body": null
+  },
+  {
+    "name": "get_expense_category",
+    "arguments": {
+      "category_id": "ec_1"
+    },
+    "method": "GET",
+    "path": "/expensedata/categories/ec_1",
+    "query": {},
+    "body": null
+  },
+  {
+    "name": "get_expense_category_labels",
+    "arguments": {
+      "category_id": "ec_1"
+    },
+    "method": "GET",
+    "path": "/expensedata/categories/ec_1/labels",
+    "query": {
+      "page": "0",
+      "count": "10"
+    },
+    "body": null
+  },
+  {
+    "name": "get_expense_category_label",
+    "arguments": {
+      "category_id": "ec_1",
+      "label_id": "ecl_1"
+    },
+    "method": "GET",
+    "path": "/expensedata/categories/ec_1/labels/ecl_1",
+    "query": {},
+    "body": null
+  },
+  {
+    "name": "create_expense_category",
+    "arguments": {
+      "name": "Synthetic category",
+      "code": "TEST",
+      "required": false
+    },
+    "method": "POST",
+    "path": "/expensedata/categories",
+    "query": {},
+    "body": {
+      "name": "Synthetic category",
+      "code": "TEST",
+      "required": false
+    }
+  },
+  {
+    "name": "create_expense_category_label",
+    "arguments": {
+      "category_id": "ec_1",
+      "name": "Synthetic label",
+      "code": "TEST"
+    },
+    "method": "POST",
+    "path": "/expensedata/categories/ec_1/labels",
+    "query": {},
+    "body": {
+      "name": "Synthetic label",
+      "code": "TEST",
+      "active": true
+    }
+  },
+  {
+    "name": "update_expense_category",
+    "arguments": {
+      "category_id": "ec_1",
+      "active": false
+    },
+    "method": "PATCH",
+    "path": "/expensedata/categories/ec_1",
+    "query": {},
+    "body": {
+      "active": false
+    }
+  },
+  {
+    "name": "update_expense_category_label",
+    "arguments": {
+      "category_id": "ec_1",
+      "label_id": "ecl_1",
+      "active": false
+    },
+    "method": "PATCH",
+    "path": "/expensedata/categories/ec_1/labels/ecl_1",
+    "query": {},
+    "body": {
+      "active": false
+    }
+  },
+  {
+    "name": "get_organizations",
+    "arguments": {},
+    "method": "GET",
+    "path": "/organizations",
+    "query": {},
+    "body": null
+  },
+  {
+    "name": "get_organization_members",
+    "arguments": {
+      "organization_id": "org_1"
+    },
+    "method": "GET",
+    "path": "/organizations/org_1/members",
+    "query": {
+      "page": "0",
+      "count": "50",
+      "showDeactivatedUsers": "true",
+      "renderMetrics": "false"
+    },
+    "body": null
+  },
+  {
+    "name": "get_user_details",
+    "arguments": {
+      "user_id": "u_1"
+    },
+    "method": "GET",
+    "path": "/users/u_1",
+    "query": {},
+    "body": null
+  },
+  {
+    "name": "get_expense_policy",
+    "arguments": {
+      "organization_id": "org_1"
+    },
+    "method": "GET",
+    "path": "/organizations/org_1/expensepolicy",
+    "query": {},
+    "body": null
+  },
+  {
+    "name": "create_receipt_attachment",
+    "arguments": {
+      "file_path": "synthetic.pdf"
+    },
+    "method": "POST",
+    "path": "/receiptattachments",
+    "query": {},
+    "body": "multipart"
+  },
+  {
+    "name": "automatch_receipts",
+    "arguments": {
+      "receipt_attachment_ids": [
+        "ra_1"
+      ]
+    },
+    "method": "POST",
+    "path": "/receiptcapture/automatch",
+    "query": {},
+    "body": {
+      "receiptAttachmentIds": [
+        "ra_1"
+      ]
+    }
+  },
+  {
+    "name": "get_automatch_status",
+    "arguments": {
+      "job_id": "job_1"
+    },
+    "method": "GET",
+    "path": "/receiptcapture/job_1/status",
+    "query": {},
+    "body": null
+  },
+  {
+    "name": "send_receipt_reminder",
+    "arguments": {
+      "transaction_id": "t_1"
+    },
+    "method": "POST",
+    "path": "/transactions/t_1/receiptreminder",
+    "query": {},
+    "body": null
+  }
+]

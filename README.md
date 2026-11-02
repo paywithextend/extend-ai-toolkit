@@ -1,279 +1,119 @@
-# Extend AI Toolkit 
+# Extend AI Toolkit
 
-## Overview
+Framework-neutral tools for Extend cards, transactions, expense data and receipts, with adapters for OpenAI Agents, LangChain and local MCP. Requires Python 3.11+. Version 2 is a breaking development release; see [migration and release prerequisites](MIGRATION.md).
 
-The [Extend](https://www.paywithextend.com) AI Toolkit provides a python based implementation of tools to integrate with Extend APIs for multiple AI frameworks including Anthropic's [Model Context Protocol (MCP)](https://modelcontextprotocol.com/), [OpenAI](https://github.com/openai/openai-agents-python), [LangChain](https://github.com/langchain-ai/langchain), and [CrewAI](https://github.com/joaomdmoura/crewAI). It enables users to delegate certain actions in the spend management flow to AI agents or MCP-compatible clients like Claude desktop.
-
-These tools are designed for existing Extend users with API keys. If you are not signed up with Extend and would like to learn more about our modern, easy-to-use virtual card and spend management platform for small- and medium-sized businesses, you can check us out at [paywithextend.com](https://www.paywithextend.com/).
-
-## Features
-
-- **Multiple AI Framework Support**: Works with Anthropic Model Context Protocol, OpenAI Agents, LangChain LangGraph & ReAct, and CrewAI frameworks 
-- **Comprehensive Tool Set**: Supports all of Extend's major API functionalities, spanning our Credit Card, Virtual Card, Transaction & Expense Management endpoints
-
-## Installation
-
-You don't need this source code unless you want to modify the package. If you just
-want to use the package run:
+## Install
 
 ```sh
-pip install extend_ai_toolkit
+pip install extend-ai-toolkit                 # core only
+pip install 'extend-ai-toolkit[mcp]'          # local stdio server
+pip install 'extend-ai-toolkit[openai]'       # OpenAI Agents
+pip install 'extend-ai-toolkit[langchain]'    # langchain-core tools
 ```
 
-### Requirements
+SDK 3.0.0 must be published before version 2 can install from the registry. The dedicated CrewAI adapter, extra and agent/task/crew factories are removed in version 2. See [MIGRATION.md](MIGRATION.md) before upgrading an application that uses them.
 
-- **Python**: Version 3.10 or higher
-- **Extend API Key**: Sign up at [paywithextend.com](https://paywithextend.com) to obtain an API key
-- **Framework-specific Requirements**:
-  - LangChain: `langchain` and `langchain-openai` packages
-  - OpenAI: `openai` package
-  - CrewAI: `crewai` package
-  - Anthropic: `anthropic` package (for Claude)
+## Local MCP
 
-## Configuration
+Set `EXTEND_API_KEY` and `EXTEND_API_SECRET` in the host's secret environment and choose the environment explicitly:
 
-The library needs to be configured with your Extend API key and API, either through environment variables or command line arguments:
-
-```
---api-key=your_api_key_here --api-secret=your_api_secret_here 
+```sh
+python -m extend_ai_toolkit.modelcontextprotocol.main --environment=stage
 ```
 
-or via environment variables:
-```
-EXTEND_API_KEY=your_api_key_here
-EXTEND_API_SECRET=your_api_secret_here
-```
+The CLI exposes 16 read tools over local stdio. Credentials are not accepted as command-line arguments. Embed `ExtendMCPServer` with a trusted host policy to permit writes. Unauthenticated SSE and HTTP hosting are disabled. Adding a filesystem server does not grant receipt-upload authority.
 
-### Custom Authorization (paywithextend 2.0+)
-
-When you upgrade to `paywithextend>=2.0.0`, the SDK accepts reusable authorization
-strategies. You can pass any implementation (including the new `BearerAuth`) to
-the toolkit:
-
-```python
-from extend.auth import BearerAuth
-from extend_ai_toolkit.shared import ExtendAPI
-
-extend_api = ExtendAPI.from_auth(BearerAuth(jwt_token="your-jwt-token"))
-```
-
-If you're still using `paywithextend` 1.x, continue providing `api_key` and
-`api_secret`; the toolkit adapts automatically.
-
-## Available Tools
-
-The toolkit provides a comprehensive set of tools organized by functionality:
-
-### Virtual Cards
-- `get_virtual_cards`: Fetch virtual cards with optional filters
-- `get_virtual_card_detail`: Get detailed information about a specific virtual card
-
-### Credit Cards
-- `get_credit_cards`: List all credit cards
-- `get_credit_card_detail`: Get detailed information about a specific credit card
-
-### Transactions
-- `get_transactions`: Fetch transactions with various filters
-- `get_transaction_detail`: Get detailed information about a specific transaction
-- `update_transaction_expense_data`: Update expense-related data for a transaction
-
-### Expense Management
-- `get_expense_categories`: List all expense categories
-- `get_expense_category`: Get details of a specific expense category
-- `get_expense_category_labels`: Get labels for an expense category
-- `create_expense_category`: Create a new expense category
-- `create_expense_category_label`: Add a label to an expense category
-- `update_expense_category`: Modify an existing expense category
-- `create_receipt_attachment`: Upload a receipt (and optionally attach to a transaction)
-- `automatch_receipts`: Initiate async job to automatch uploaded receipts to transactions
-- `get_automatch_status`: Get the status of an automatch job
-- `send_receipt_reminder`: Send a reminder (via email) for a transaction missing a receipt 
-
-## Usage Examples
-
-### Model Context Protocol
-
-The toolkit provides resources in the `extend_ai_toolkit.modelcontextprotocol` package to help you build an MCP server.
-
-#### Development
-
-Test Extend MCP server locally using MCP Inspector:
-
-```bash
-npx @modelcontextprotocol/inspector python extend_ai_toolkit/modelcontextprotocol/main.py --tools=all
-```
-
-#### Claude Desktop Integration
-
-Add this tool as an MCP server to Claude Desktop by editing the config file:
-
-On MacOS: `~/Library/Application\ Support/Claude/claude_desktop_config.json`
-On Windows: `%APPDATA%/Claude/claude_desktop_config.json`
-
-if you want to use the create_receipt_attachment tool with claude desktop you'll need to install the filesystem mcp server via `npm install @modelcontextprotocol/server-filesystem` add then add to the config file as well. 
-
-Please note: due to current limitations images uploaded directly to the Claude Desktop cannot be uploaded to Extend due to the fact that the Claude Desktop app does not have access to the underlying image data. This is why the [Filesystem MCP Server](https://github.com/modelcontextprotocol/servers/tree/main/src/filesystem) is necessary. 
-
-With the addition of Filesystem, you can setup a dedicated folder for receipts, and tell Claude it to upload the receipt and automatch it to the most likely transaction. Alternatively, if you know the transaction you want to attach the receipt to then you can tell Claude to upload the receipt for that transaction (and skip the automatch process. 
-
-
-```json
-{
-  "extend-mcp": {
-    "command": "python",
-    "args": [
-      "-m",
-      "extend_ai_toolkit.modelcontextprotocol.main",
-      "--tools=all"
-    ],
-    "env": {
-      "EXTEND_API_KEY": "apik_XXXX",
-      "EXTEND_API_SECRET": "XXXXX"
-    }
-  },
-  // optional: if you want to use the create_receipt_attachment tool
-  "filesystem": { 
-    "command": "npx",
-    "args": [
-      "-y",
-      "@modelcontextprotocol/server-filesystem",
-      "/path/to/receipts/folder"
-    ]
-  }
-}
-```  
-
-#### Remote Execution
-
-You can also run your server remotely and communicate via SSE transport:
-
-```bash
-python -m extend_ai_toolkit.modelcontextprotocol.main_sse --tools=all --api-key="apikey" --api-secret="apisecret"
-```
-
-and optionally connect using the MCP terminal client:
-```bash
-python -m extend_ai_toolkit.modelcontextprotocol.client.mcp_client --mcp-server-host localhost --mcp-server-port 8000 --llm-provider=anthropic --llm-model=claude-3-5-sonnet-20241022
-```
-
-### OpenAI
+## Core reads
 
 ```python
 import os
-from langchain_openai import ChatOpenAI
-from extend_ai_toolkit.openai.toolkit import ExtendOpenAIToolkit
-from extend_ai_toolkit.shared import Configuration, Scope, Product, Actions
+from extend import ExtendClient
+from extend.auth import BasicAuth
+from extend_ai_toolkit import execute_tool
 
-# Initialize the OpenAI toolkit
-extend_openai_toolkit = ExtendOpenAIToolkit.default_instance(
-    api_key=os.environ.get("EXTEND_API_KEY"),
-    api_secret=os.environ.get("EXTEND_API_SECRET"),
-    configuration=Configuration(
-        scope=[
-            Scope(Product.VIRTUAL_CARDS, actions=Actions(read=True)),
-            Scope(Product.CREDIT_CARDS, actions=Actions(read=True)),
-            Scope(Product.TRANSACTIONS, actions=Actions(read=True)),
-        ]
-    )
-)
-
-# Create an agent with the tools
-extend_agent = Agent(
-    name="Extend Agent",
-    instructions="You are an expert at integrating with Extend",
-    tools=extend_openai_toolkit.get_tools()
-)
+async def recent_transactions():
+    async with ExtendClient(
+        auth=BasicAuth(os.environ["EXTEND_API_KEY"], os.environ["EXTEND_API_SECRET"]),
+        environment="stage",  # select prod explicitly when appropriate
+    ) as client:
+        return await execute_tool(client, "get_transactions", {
+            "page": 1, "per_page": 25,
+            "statuses": ["CLEARED", "PENDING"],
+            "receipt_statuses": ["Missing"],
+        })
 ```
 
-### LangChain
+Imports do not load `.env` or choose an environment. Return values retain original JSON structures, currency codes and optional fields. `ExtendAPI.execute` returns structures; adapter `run` outputs serialize them as JSON. The optional `shared.helpers.format_response` pretty-prints the complete response.
+
+Transaction pages start at **1**; card, category-label and member pages start at **0**. Full transaction pages carry provisional backend counts; `paginationInfo.countExact` is false and `mayHaveMore` is true. Follow `nextPage` with a bounded loop; an empty page can end a full-page sequence. Use `count_transactions` only when an exact total is needed. The list and count tools share filters. Unsupported status values, conflicting aliases, invalid dates and inverted ranges fail before HTTP.
+
+The expense-policy tool returns file and compilation metadata, not raw policy text. It never follows the signed URLs in that response. Treat those URLs, notes, merchant descriptions and other fetched content as sensitive, untrusted data.
+
+## Host-controlled writes
+
+The default policy exposes 16 reads. [CAPABILITIES.md](CAPABILITIES.md) lists all 26 tools, scopes and effects. Configuration is host-owned; it cannot grant authority through model arguments. `all` enables discovery only when used to construct an explicit policy; it never substitutes for approval.
 
 ```python
-import os
-from langchain_openai import ChatOpenAI
-from langgraph.prebuilt import create_react_agent
-from extend_ai_toolkit.langchain.toolkit import ExtendLangChainToolkit
-from extend_ai_toolkit.shared import Configuration, Scope, Product, Actions
+from pathlib import Path
+from extend_ai_toolkit import ExecutionPolicy
+from extend_ai_toolkit.shared import Configuration, ExtendAPI
 
-# Initialize the LangChain toolkit
-extend_langchain_toolkit = ExtendLangChainToolkit.default_instance(
-    api_key=os.environ.get("EXTEND_API_KEY"),
-    api_secret=os.environ.get("EXTEND_API_SECRET"),
-    configuration=Configuration(
-        scope=[
-            Scope(Product.VIRTUAL_CARDS, actions=Actions(read=True)),
-            Scope(Product.CREDIT_CARDS, actions=Actions(read=True)),
-            Scope(Product.TRANSACTIONS, actions=Actions(read=True)),
-        ]
+async def approved_api(client, authenticated_user_id, approval_service):
+    async def approve(request):
+        # This service is trusted host/UI code, outside the model and tool schemas.
+        # Display request.tool_name and request.arguments_json to the authenticated
+        # actor and return True only for this invocation_id and payload_sha256.
+        return await approval_service.request_decision(request)
+
+    policy = ExecutionPolicy.from_configuration(
+        Configuration.from_tool_str(
+            "transactions.read,transactions.update,"
+            "receipt_attachments.read,receipt_attachments.create"
+        ),
+        actor_id=authenticated_user_id,
+        approve=approve,
+        receipt_root=Path("/absolute/path/to/approved/receipts"),
     )
-)
-
-# Create tools for the agent
-tools = extend_langchain_toolkit.get_tools()
-
-# Create the agent executor
-langgraph_agent_executor = create_react_agent(
-    ChatOpenAI(model="gpt-4"),
-    tools
-)
+    return ExtendAPI(client, policy=policy)
 ```
 
-### CrewAI
+Every write invokes the host callback separately; decisions expire at the configured timeout and are never cached by the toolkit. Bind any persisted host approval tokens to actor, operation and payload, expire them, and consume them atomically once. A model saying “confirmed” has no authority. The host must authenticate the actor and choose appropriately scoped API credentials; backend authorization still applies.
 
-```python
-import os
-from extend_ai_toolkit.crewai.toolkit import ExtendCrewAIToolkit
-from extend_ai_toolkit.shared import Configuration, Scope, Product, Actions
+Receipt uploads reject symlinks, hard links, nonregular files, mismatched signatures and files above the host byte limit (20 MiB by default). They use a stable snapshot before approval. File access fails closed on platforms without safe directory-descriptor opening. Omitting `transaction_id` preserves all file/approval checks and the conservative receipt/transaction capability requirements.
 
-# Initialize the CrewAI toolkit
-toolkit = ExtendCrewAIToolkit.default_instance(
-    api_key=os.environ.get("EXTEND_API_KEY"),
-    api_secret=os.environ.get("EXTEND_API_SECRET"),
-    configuration=Configuration(
-        scope=[
-            Scope(Product.VIRTUAL_CARDS, actions=Actions(read=True)),
-            Scope(Product.CREDIT_CARDS, actions=Actions(read=True)),
-            Scope(Product.TRANSACTIONS, actions=Actions(read=True)),
-        ]
-    )
-)
+`workflows.upload_and_automatch(api, file_path, max_polls=20)` uploads once, starts one approved job, then polls reads. It returns complete, partial/failed, pending or unknown status with receipt/job identifiers. A pending or uncertain write must be reconciled; the workflow never replays uploads or jobs automatically.
 
-# Configure the LLM (using Claude)
-toolkit.configure_llm(
-    model="claude-3-opus-20240229",
-    api_key=os.environ.get("ANTHROPIC_API_KEY")
-)
+Failures after upload raise `workflows.ReceiptWorkflowError` with `receipt_id`,
+`job_id` (if received), and `failed_step`; `__cause__` retains the original error.
+If `job_id` is available, resume with `api.execute("get_automatch_status", {"job_id":
+error.job_id})` rather than calling the upload helper again. If job creation failed
+without returning an ID, reconcile the receipt and possible job before resubmitting.
+Upload failures propagate unchanged because no completed-step ID is available.
+Cancellation raises `ReceiptWorkflowCancelled`, an `asyncio.CancelledError` subclass
+with the same identifiers; record recovery state and re-raise cancellation. Store
+recovery identifiers securely if they must survive a process restart.
 
-# Create the Extend agent
-extend_agent = toolkit.create_agent(
-    role="Extend Integration Expert",
-    goal="Help users manage virtual cards, view credit cards, and check transactions efficiently",
-    backstory="You are an expert at integrating with Extend, with deep knowledge of virtual cards, credit cards, and transaction management.",
-    verbose=True
-)
 
-# Create a task for handling user queries
-query_task = toolkit.create_task(
-    description="Process and respond to user queries about Extend services",
-    agent=extend_agent,
-    expected_output="A clear and helpful response addressing the user's query",
-    async_execution=True
-)
+## Optional adapters
 
-# Create a crew with the agent and task
-crew = toolkit.create_crew(
-    agents=[extend_agent],
-    tasks=[query_task],
-    verbose=True
-)
+Create `ExtendOpenAIToolkit` or `ExtendLangChainToolkit` from `ExtendAPI(client, policy=...)` and register its `get_tools()` with your host. Close the shared API client with `async with` or `aclose()`. LangChain tools use asynchronous `ainvoke`; synchronous invocation is unsupported because it creates incompatible event loops around pooled clients.
 
-# Run the crew
-result = crew.kickoff()
+Disable optional telemetry before importing providers: `LANGSMITH_TRACING=false` and `OTEL_SDK_DISABLED=true`. OpenAI Agent runs should use `RunConfig(tracing_disabled=True, trace_include_sensitive_data=False)`. Necessary model inputs still go to the selected provider. The toolkit does not change the embedding process's global tracing settings.
+
+## Reference examples
+
+The OpenAI and Anthropic terminal clients demonstrate bounded conversations over local MCP. They are reference examples for host integration. Applications remain responsible for authentication, approval UI, durable state, outcome reconciliation and operational monitoring. Their existing import paths remain available.
+
+```sh
+pip install 'extend-ai-toolkit[terminal-openai]'       # or [terminal-anthropic]
+python -m extend_ai_toolkit.modelcontextprotocol.client.mcp_client \
+  --provider=openai --model=YOUR_MODEL --environment=stage
 ```
 
-## Contributing
+Set the selected provider's API key in the host environment. The terminal launcher starts the read-only stdio server. The example handles native provider messages, multiple tool calls, retained session state, bounded rounds, parallel reads and ordered writes. For embedded servers that permit writes, attempted mutations are recorded for the session, including uncertain/cancelled ones; reconcile their outcome before starting a new session or retrying. This in-memory protection does not persist across process restarts.
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+The [adapter examples](extend_ai_toolkit/examples/README.md) can also run against synthetic fixtures without credentials or model calls.
 
-## License
+## Validation
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+`make lint` and `make test` run the named safety, adapter, contract and conversation tests. Fixture tests make no live financial requests. The examples accept `--fixture` and need no credentials for that mode. [CONTRACTS.md](CONTRACTS.md) records endpoint evidence and [SANDBOX.md](SANDBOX.md) defines the separate release smoke checks. A passing synthetic test is not production/sandbox validation. Release order and Trusted Publishing setup are documented in [MIGRATION.md](MIGRATION.md).
