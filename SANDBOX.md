@@ -1,6 +1,6 @@
 # Named staging release smoke set
 
-Synthetic unit and adapter tests are separate from live release validation. The live smoke set has **not been run** for this change: no designated synthetic account/transaction/receipt fixture was supplied. Do not infer sandbox or production readiness from mocked HTTP tests.
+Synthetic unit and adapter tests are separate from live release validation. The complete named smoke set has **not passed** for this change. Separate staging checks passed card, transaction and category reads, but organization listing returned 403 through the public gateway. The upload/matching smoke workflow below has not been validated end to end. Do not infer sandbox or production readiness from mocked HTTP tests.
 
 The account owner should provide a fixture JSON in a private directory, alongside a synthetic PDF/image. It identifies `environment: "stage"`, `synthetic: true`, `actor_id`, `organization_id`, `credit_card_id`, `transaction_id`, `expense_data` and `receipt_filename`. Supply only sandbox credentials in `EXTEND_SANDBOX_API_KEY` and `EXTEND_SANDBOX_API_SECRET`; the script ignores ambient SDK credentials and fixes its destination to stage.
 

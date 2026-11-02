@@ -26,3 +26,12 @@ Source review establishes request/response contracts, not live authorization.
 These user-facing routes require user-scoped credentials, server permission and
 feature checks. Enterprise service keys are not interchangeable. The app has
 additional bulk, vault and approval workflows outside this toolkit's catalog.
+
+## Gateway validation limits
+
+Staging checks on 2026-10-31 returned 403 for organization listing and individual
+expense-label lookup through the public API gateway. Receipt upload succeeded,
+but deletion was not exposed through that gateway. An implemented application
+endpoint is not sufficient evidence of public gateway exposure. These helpers
+require gateway availability in addition to credentials and backend permissions;
+the synthetic fixtures do not establish deployed availability.

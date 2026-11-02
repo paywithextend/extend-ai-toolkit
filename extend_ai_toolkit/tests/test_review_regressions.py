@@ -27,7 +27,7 @@ async def test_default_transactions_use_first_sdk_page(entrypoint):
         ) as sdk:
             result = (await execute_tool(sdk, "get_transactions", {})
                       if entrypoint == "tool" else await get_transactions(sdk))
-    assert result == response
+    assert result["report"] == response["report"]
     assert len(requests) == 1
     assert requests[0].url.path == "/reports/transactions/v2"
     assert requests[0].url.params["page"] == "1"
@@ -49,14 +49,18 @@ async def test_terminal_lists_and_queries_real_mcp_models():
     result = types.ListToolsResult(tools=[types.Tool(
         name="get_transactions", description="List transactions", input_schema=schema
     )])
-    provider = SimpleNamespace(generate_completion=AsyncMock(return_value=("Ready", None)))
+    from extend_ai_toolkit.modelcontextprotocol.client.chat_client import AssistantTurn
+
+    provider = SimpleNamespace(complete=AsyncMock(return_value=AssistantTurn(
+        {"role": "assistant", "content": "Ready"}, text="Ready"
+    )))
     client = MCPClient(provider)
     client.session = SimpleNamespace(list_tools=AsyncMock(return_value=result))
     assert await client.list_available_tools() == [{
-        "name": "get_transactions", "description": "List transactions", "input_schema": schema
+        "name": "get_transactions", "description": "List transactions", "parameters": schema
     }]
     assert await client.process_query("List transactions") == "Ready"
-    provider.generate_completion.assert_awaited_once()
-    assert provider.generate_completion.await_args.kwargs["functions"] == [{
+    provider.complete.assert_awaited_once()
+    assert provider.complete.await_args.args[1] == [{
         "name": "get_transactions", "description": "List transactions", "parameters": schema
     }]

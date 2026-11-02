@@ -91,7 +91,7 @@ class TransactionFilters(ToolArguments):
 class GetTransactions(TransactionFilters):
     """One-based transaction report pages; full-page counts are provisional."""
 
-    page: int = Field(1, ge=1)
+    page: int = Field(1, ge=1, description="One-based pagination page number, default is 1.")
     per_page: int = Field(50, ge=1, le=100)
 
 
