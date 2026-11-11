@@ -1,0 +1,29 @@
+name: Create PR for Production
+
+on:
+  push:
+    branches:
+      - development
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+  statuses: read
+  checks: read
+  repository-projects: read # workaround for bug https://github.com/cli/cli/discussions/5307
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  create_release_train_pr:
+    uses: paywithextend/extend-infrastructure/.github/workflows/create_release_train_pr.yaml@main
+    secrets: inherit
+    with:
+      source-branch: development
+      target-branch: main
+      pr-title: "Development -> Main"
+      timeout-minutes: 2
